@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WATabs — Multi-account WhatsApp Web workspace</title>
+    <meta
+      name="description"
+      content="WATabs keeps multiple WhatsApp Web accounts in one local desktop window. Official WhatsApp Web only — no scraping, no bots."
+    />
+    <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="banner" data-update-banner role="status"></div>
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="nav-brand" href="./index.html" data-nav="index">
+          <img src="./assets/watabs-logo.png" alt="" width="32" height="32" />
+          <span>WATabs</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="./phase7.html" data-nav="phase7">Phase 7</a></li>
+          <li><a href="./updates.html" data-nav="updates">Updates</a></li>
+          <li><a href="./privacy.html" data-nav="privacy">Privacy</a></li>
+          <li><a href="#" data-repo>GitHub</a></li>
+        </ul>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <div class="hero-brand" aria-label="WATabs">
+            <img
+              class="mark"
+              src="./assets/watabs-logo.png"
+              alt=""
+              width="72"
+              height="72"
+            />
+            <img
+              class="word"
+              src="./assets/watabs-text.png"
+              alt="WATabs"
+              width="220"
+              height="48"
+            />
+          </div>
+          <h1>Many accounts. One local window.</h1>
+          <p class="lede">
+            Isolated WhatsApp Web sessions on your machine — the shell stays
+            local; messaging stays on the official site.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#" data-download
+              >Download latest</a
+            >
+            <a class="btn btn-ghost" href="./phase7.html"
+              >Packaging &amp; update plan</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>What ships today</h2>
+          <p class="support">
+            A desktop container for multiple persistent WhatsApp Web profiles —
+            not a custom chat client.
+          </p>
+          <div class="prose">
+            <ul>
+              <li>Separate partitions per account; sessions stay on disk locally</li>
+              <li>Downloads, media permissions, tray, and optional app lock</li>
+              <li>No WhatsApp DOM injection, scraping, or message automation</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Independent project. Not affiliated with, endorsed by, or connected to
+          WhatsApp LLC or Meta Platforms, Inc.
+        </p>
+        <p class="fine">
+          WhatsApp is a trademark of WhatsApp LLC. Use of the official WhatsApp
+          Web interface remains subject to WhatsApp’s terms.
+        </p>
+      </div>
+    </footer>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

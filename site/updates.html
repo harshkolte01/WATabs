@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Updates &amp; channels · WATabs</title>
+    <meta
+      name="description"
+      content="How WATabs stable and beta channels will work with signed GitHub Releases and electron-updater."
+    />
+    <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="banner" data-update-banner role="status"></div>
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="nav-brand" href="./index.html" data-nav="index">
+          <img src="./assets/watabs-logo.png" alt="" width="32" height="32" />
+          <span>WATabs</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="./phase7.html" data-nav="phase7">Phase 7</a></li>
+          <li><a href="./updates.html" data-nav="updates">Updates</a></li>
+          <li><a href="./privacy.html" data-nav="privacy">Privacy</a></li>
+          <li><a href="#" data-repo>GitHub</a></li>
+        </ul>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="wrap prose">
+        <header class="page-head">
+          <h1>How updates work</h1>
+          <p>
+            Until Phase 7 ships in the desktop app, there is no in-app
+            auto-update. Download installers from GitHub Releases manually.
+          </p>
+        </header>
+
+        <h2>Where binaries live</h2>
+        <p>
+          Signed installers and updater metadata are published to
+          <a href="#" data-download>GitHub Releases</a>. This Vercel site does
+          not host update packages or signing keys.
+        </p>
+
+        <h2>Channels</h2>
+        <ul>
+          <li>
+            <strong>Stable</strong> — tags like <code>v1.2.3</code>, marked as
+            the latest release. Default channel for users.
+          </li>
+          <li>
+            <strong>Beta</strong> — tags like <code>v1.2.3-beta.1</code>,
+            published as GitHub prereleases for early testers.
+          </li>
+        </ul>
+
+        <h2>Trust model</h2>
+        <ul>
+          <li>OS code signing (Windows Authenticode; Apple Developer ID)</li>
+          <li>macOS notarization for Gatekeeper</li>
+          <li>Update payload signatures verified by the app before apply</li>
+          <li>Electron fuses hardened on packaged builds (DevTools off, etc.)</li>
+        </ul>
+
+        <h2>What an update must never do</h2>
+        <p>
+          Replace only application binaries and resources. Account partitions,
+          metadata, downloads history, and lock verifier stay in userData across
+          upgrades.
+        </p>
+
+        <h2>Today vs after Phase 7</h2>
+        <ul>
+          <li>
+            <strong>Now:</strong> <code>pnpm start</code> and local
+            <code>pnpm package</code> have no auto-update.
+          </li>
+          <li>
+            <strong>After Phase 7:</strong> packaged apps check the signed feed,
+            download, and prompt to restart — still without touching sessions.
+          </li>
+        </ul>
+
+        <p style="margin-top: 2rem">
+          <a class="btn btn-primary" href="#" data-download>Open releases</a>
+          <a class="btn btn-ghost" href="./phase7.html">See Phase 7 steps</a>
+        </p>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Independent project. Not affiliated with, endorsed by, or connected to
+          WhatsApp LLC or Meta Platforms, Inc.
+        </p>
+      </div>
+    </footer>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

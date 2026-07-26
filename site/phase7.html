@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Phase 7 — Packaging &amp; Updates · WATabs</title>
+    <meta
+      name="description"
+      content="Stepwise Phase 7 plan for WATabs: signing, macOS notarization, channels, and electron-updater via GitHub Releases."
+    />
+    <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="banner" data-update-banner role="status"></div>
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="nav-brand" href="./index.html" data-nav="index">
+          <img src="./assets/watabs-logo.png" alt="" width="32" height="32" />
+          <span>WATabs</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="./phase7.html" data-nav="phase7">Phase 7</a></li>
+          <li><a href="./updates.html" data-nav="updates">Updates</a></li>
+          <li><a href="./privacy.html" data-nav="privacy">Privacy</a></li>
+          <li><a href="#" data-repo>GitHub</a></li>
+        </ul>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="wrap">
+        <header class="page-head">
+          <h1>Phase 7 roadmap</h1>
+          <p>
+            Packaging, code signing, channels, and signed auto-update. Update
+            installers live on GitHub Releases — this site only explains the
+            plan.
+          </p>
+          <p class="progress-pill" data-phase7-progress>0 / 8 steps done</p>
+        </header>
+
+        <ol class="steps">
+          <li data-step="0">
+            <div class="step-num">0</div>
+            <div class="step-body">
+              <h3>Prerequisites &amp; secrets</h3>
+              <p>
+                Inventory CI secrets only (never in the repo or packaged app):
+                Windows signing, Apple Developer ID + notarization, update
+                signing key, release publish token. Names documented in
+                <code>docs/phase7-secrets.md</code>.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="1">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h3>Versioning &amp; channels</h3>
+              <p>
+                Semver in the desktop package. Stable:
+                <code>vX.Y.Z</code> (latest release). Beta:
+                <code>vX.Y.Z-beta.N</code> as GitHub prerelease. App defaults to
+                stable.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="2">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h3>Windows packaging &amp; signing</h3>
+              <p>
+                Squirrel.Windows installer for WATabs; sign setup/exe in CI.
+                Upgrades must never delete account partitions under userData.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="3">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h3>macOS packaging &amp; notarization</h3>
+              <p>
+                Build on macOS runners (Windows builds do not run on Mac). Sign
+                + notarize; confirm notifications still work on signed builds.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="4">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <h3>Update manager in the app</h3>
+              <p>
+                <code>electron-updater</code> only when packaged. States: idle →
+                checking → available → downloading → ready → error. Never touch
+                account partition folders.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="5">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <h3>Signed update feed publish</h3>
+              <p>
+                Tag release workflow: build → sign → checksums + SBOM → GitHub
+                Release assets + updater metadata. Verify Electron fuses after
+                package.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="6">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <h3>Shell UX &amp; migration smoke</h3>
+              <p>
+                Settings: channel, version, check now, release notes. Manual
+                upgrade with two+ logged-in accounts; partitions must remain.
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+          <li data-step="7">
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <h3>Acceptance gate</h3>
+              <ul>
+                <li>Fresh install, upgrade, uninstall pass</li>
+                <li>Notifications on signed Windows and notarized macOS</li>
+                <li>Updates preserve all account partitions</li>
+                <li>Signatures and notarization verify</li>
+              </ul>
+              <p>
+                Only then claim auto-update is live for users (flip
+                <code>autoUpdateLive</code> in
+                <code>phase7-status.json</code>).
+              </p>
+            </div>
+            <span class="status-badge" data-status-badge>Not started</span>
+          </li>
+        </ol>
+
+        <div class="flow" aria-label="Release flow">
+          <span>CI build</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span>Sign</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span>GitHub Release</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span>electron-updater</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span>Partitions preserved</span>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Independent project. Not affiliated with, endorsed by, or connected to
+          WhatsApp LLC or Meta Platforms, Inc.
+        </p>
+        <p class="fine">
+          Status badges load from <code>phase7-status.json</code> — edit that
+          file as desktop Phase 7 work progresses.
+        </p>
+      </div>
+    </footer>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
