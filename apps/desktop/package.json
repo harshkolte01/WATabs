@@ -1,9 +1,10 @@
 {
   "name": "@multi-whatsapp/desktop",
   "productName": "WATabs",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "WATabs — multi-account WhatsApp Web desktop workspace",
+  "author": "WATabs",
   "main": ".vite/build/index.js",
   "scripts": {
     "prestart": "node ../../scripts/ensure-electron-link.cjs",

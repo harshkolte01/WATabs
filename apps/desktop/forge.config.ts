@@ -34,6 +34,10 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({
       name: "WATabs",
+      // Required by Squirrel/NuGet nuspec (package.json "author" alone can be missed in monorepos).
+      authors: "WATabs",
+      description:
+        "WATabs — multi-account WhatsApp Web desktop workspace",
       setupIcon: `${iconBase}.ico`,
       // Sign Setup.exe + app at make time (Forge Windows signing guide).
       ...(windowsSign
