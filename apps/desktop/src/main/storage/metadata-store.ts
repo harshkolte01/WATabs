@@ -162,6 +162,32 @@ export function setLastSelectedAccountId(accountId: string | null): void {
   persistMetadata({ ...current, accounts, lastSelectedAccountId: accountId });
 }
 
+export function updateAccountPermissions(
+  accountId: string,
+  patch: Partial<
+    Pick<
+      AccountRecord,
+      | "notificationsEnabled"
+      | "notificationSoundEnabled"
+      | "unreadBadgeEnabled"
+      | "microphonePermission"
+      | "cameraPermission"
+      | "displayCapturePermission"
+    >
+  >,
+): AccountRecord {
+  const account = getAccount(accountId);
+  if (!account) {
+    throw new Error("Unknown account");
+  }
+  const updated: AccountRecord = {
+    ...account,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  return upsertAccount(updated);
+}
+
 export function reorderAccountRecords(accountIds: string[]): AccountRecord[] {
   const current = loadMetadata();
   const byId = new Map(current.accounts.map((a) => [a.id, a]));

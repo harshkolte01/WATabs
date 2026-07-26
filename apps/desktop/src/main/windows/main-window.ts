@@ -8,6 +8,7 @@ import {
   bindViewHost,
   relayout,
 } from "../accounts/account-view-manager";
+import { registerShellPromptSender } from "../permissions/shell-bridge";
 import { layoutShellView } from "./view-layout";
 import { resolveInitialWindowState, trackWindowState } from "./window-state";
 
@@ -86,6 +87,10 @@ export function createMainWindow(): BrowserWindow {
   shellView = createShellView();
   mainWindow.contentView.addChildView(shellView);
   layoutShellView(mainWindow, shellView);
+  registerShellPromptSender((channel, payload) => {
+    if (!shellView || shellView.webContents.isDestroyed()) return;
+    shellView.webContents.send(channel, payload);
+  });
 
   mainWindow.on("resize", () => {
     if (!mainWindow || !shellView) return;

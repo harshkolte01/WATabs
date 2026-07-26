@@ -3,13 +3,17 @@ import type {
   AccountRecord,
   AppInfo,
   AppSettings,
+  PermissionPreference,
 } from "@multi-whatsapp/shared-types";
+import type { PermissionPromptPayload } from "../preload/shell-preload";
 
 type Tab = "accounts" | "settings";
 
 type ConfirmAction =
   | { kind: "clearSession"; accountId: string; label: string }
   | { kind: "remove"; accountId: string; label: string };
+
+const PREF_OPTIONS: PermissionPreference[] = ["ask", "allow", "block"];
 
 export function App() {
   const [tab, setTab] = useState<Tab>("accounts");
@@ -26,6 +30,7 @@ export function App() {
   const [adding, setAdding] = useState(false);
   const [addLabel, setAddLabel] = useState("");
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
+  const [prompt, setPrompt] = useState<PermissionPromptPayload | null>(null);
 
   const refreshAccounts = useCallback(async () => {
     const result = await window.desktop.accounts.list();
@@ -35,7 +40,8 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribeChanged: (() => void) | undefined;
+    let unsubscribePrompt: (() => void) | undefined;
     (async () => {
       try {
         const [appInfo, appSettings] = await Promise.all([
@@ -46,8 +52,11 @@ export function App() {
         setInfo(appInfo);
         setSettings(appSettings);
         await refreshAccounts();
-        unsubscribe = window.desktop.accounts.onChanged(() => {
+        unsubscribeChanged = window.desktop.accounts.onChanged(() => {
           void refreshAccounts();
+        });
+        unsubscribePrompt = window.desktop.permissions.onPrompt((payload) => {
+          setPrompt(payload);
         });
       } catch (err) {
         if (!cancelled) {
@@ -57,7 +66,8 @@ export function App() {
     })();
     return () => {
       cancelled = true;
-      unsubscribe?.();
+      unsubscribeChanged?.();
+      unsubscribePrompt?.();
     };
   }, [refreshAccounts]);
 
@@ -141,10 +151,77 @@ export function App() {
     setSettings(next);
   }
 
+  async function onPermissionPatch(
+    accountId: string,
+    patch: Parameters<typeof window.desktop.permissions.update>[1],
+  ): Promise<void> {
+    await run(() => window.desktop.permissions.update(accountId, patch));
+  }
+
+  async function respondPrompt(
+    decision:
+      | "allow-once"
+      | "allow-always"
+      | "block"
+      | "deny"
+      | "open"
+      | "cancel",
+  ): Promise<void> {
+    if (!prompt) return;
+    const requestId = prompt.requestId;
+    setPrompt(null);
+    await window.desktop.permissions.respondPrompt(requestId, decision);
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">Multi Account Desktop</div>
+        {prompt ? (
+          <div className="prompt-box" role="dialog" aria-modal="true">
+            <p>{prompt.message}</p>
+            {prompt.kind === "http-external" ? (
+              <div className="inline-form">
+                <button type="button" onClick={() => void respondPrompt("open")}>
+                  Open in browser
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respondPrompt("cancel")}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="inline-form">
+                <button
+                  type="button"
+                  onClick={() => void respondPrompt("allow-once")}
+                >
+                  Allow once
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respondPrompt("allow-always")}
+                >
+                  Always allow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respondPrompt("block")}
+                >
+                  Block
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respondPrompt("deny")}
+                >
+                  Deny
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
         <div className="nav-label">Accounts</div>
         {adding ? (
           <div className="inline-form add-form">
@@ -244,72 +321,147 @@ export function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="account-actions">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        setRenameId(account.id);
-                        setRenameValue(account.label);
-                      }}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onMove(account.id, -1)}
-                    >
-                      Up
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onMove(account.id, 1)}
-                    >
-                      Down
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onToggleEnabled(account)}
-                    >
-                      {account.enabled ? "Disable" : "Enable"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy || !account.enabled}
-                      onClick={() => void onReload(account.id)}
-                    >
-                      Reload
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        setConfirm({
-                          kind: "clearSession",
-                          accountId: account.id,
-                          label: account.label,
-                        })
-                      }
-                    >
-                      Clear session
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        setConfirm({
-                          kind: "remove",
-                          accountId: account.id,
-                          label: account.label,
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  <>
+                    <div className="account-actions">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => {
+                          setRenameId(account.id);
+                          setRenameValue(account.label);
+                        }}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onMove(account.id, -1)}
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onMove(account.id, 1)}
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onToggleEnabled(account)}
+                      >
+                        {account.enabled ? "Disable" : "Enable"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || !account.enabled}
+                        onClick={() => void onReload(account.id)}
+                      >
+                        Reload
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          setConfirm({
+                            kind: "clearSession",
+                            accountId: account.id,
+                            label: account.label,
+                          })
+                        }
+                      >
+                        Clear session
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          setConfirm({
+                            kind: "remove",
+                            accountId: account.id,
+                            label: account.label,
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="perm-controls">
+                      <label>
+                        <span>Notifications</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            void onPermissionPatch(account.id, {
+                              notificationsEnabled: !account.notificationsEnabled,
+                            })
+                          }
+                        >
+                          {account.notificationsEnabled ? "On" : "Off"}
+                        </button>
+                      </label>
+                      <label>
+                        <span>Mic</span>
+                        <select
+                          value={account.microphonePermission}
+                          disabled={busy}
+                          onChange={(e) =>
+                            void onPermissionPatch(account.id, {
+                              microphonePermission: e.target
+                                .value as PermissionPreference,
+                            })
+                          }
+                        >
+                          {PREF_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Camera</span>
+                        <select
+                          value={account.cameraPermission}
+                          disabled={busy}
+                          onChange={(e) =>
+                            void onPermissionPatch(account.id, {
+                              cameraPermission: e.target
+                                .value as PermissionPreference,
+                            })
+                          }
+                        >
+                          {PREF_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Display</span>
+                        <select
+                          value={account.displayCapturePermission}
+                          disabled={busy}
+                          onChange={(e) =>
+                            void onPermissionPatch(account.id, {
+                              displayCapturePermission: e.target
+                                .value as PermissionPreference,
+                            })
+                          }
+                        >
+                          {PREF_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </>
                 )}
               </li>
             );

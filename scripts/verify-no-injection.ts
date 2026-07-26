@@ -12,6 +12,11 @@ const forbiddenCodePatterns = [
     re: /invoke\s*\(\s*channel\s*,/,
     label: "generic invoke(channel, …)",
   },
+  // Permissive TLS acceptance for WhatsApp must never ship.
+  {
+    re: /certificate-error[\s\S]{0,200}callback\s*\(\s*true\s*\)/,
+    label: "certificate-error callback(true)",
+  },
 ];
 
 function walk(dir: string, files: string[] = []): string[] {

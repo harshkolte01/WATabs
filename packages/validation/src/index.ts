@@ -80,8 +80,35 @@ export const setEnabledInputSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const updateAccountPermissionsSchema = z.object({
+  accountId: accountIdSchema,
+  patch: z.object({
+    notificationsEnabled: z.boolean().optional(),
+    notificationSoundEnabled: z.boolean().optional(),
+    unreadBadgeEnabled: z.boolean().optional(),
+    microphonePermission: permissionPreferenceSchema.optional(),
+    cameraPermission: permissionPreferenceSchema.optional(),
+    displayCapturePermission: permissionPreferenceSchema.optional(),
+  }),
+});
+
+export const permissionPromptResponseSchema = z.object({
+  requestId: z.string().uuid(),
+  decision: z.enum([
+    "allow-once",
+    "allow-always",
+    "block",
+    "deny",
+    "open",
+    "cancel",
+  ]),
+});
+
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type CreateAccountInput = z.infer<typeof createAccountInputSchema>;
+export type UpdateAccountPermissionsInput = z.infer<
+  typeof updateAccountPermissionsSchema
+>;
 
 export const ipcChannels = {
   getAppInfo: "desktop:get-app-info",
@@ -99,6 +126,10 @@ export const ipcChannels = {
   accountsClearSession: "desktop:accounts:clear-session",
   accountsRemove: "desktop:accounts:remove",
   accountsChanged: "desktop:accounts:changed",
+  permissionsGet: "desktop:permissions:get",
+  permissionsUpdate: "desktop:permissions:update",
+  permissionsRespondPrompt: "desktop:permissions:respond-prompt",
+  permissionsPrompt: "desktop:permissions:prompt",
 } as const;
 
 export type IpcChannel = (typeof ipcChannels)[keyof typeof ipcChannels];

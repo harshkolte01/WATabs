@@ -4,9 +4,11 @@ import {
   accountIdSchema,
   createAccountInputSchema,
   ipcChannels,
+  permissionPromptResponseSchema,
   renameAccountInputSchema,
   reorderAccountsInputSchema,
   setEnabledInputSchema,
+  updateAccountPermissionsSchema,
   updateSettingsSchema,
 } from "@multi-whatsapp/validation";
 import {
@@ -22,10 +24,13 @@ import {
   getSelectedAccountId,
 } from "../accounts/account-manager";
 import { log } from "../diagnostics/log-manager";
+import { respondToShellPrompt } from "../permissions/permission-prompt";
 import {
+  getAccount,
   getSettings,
   getWindowState,
   resetWindowState,
+  updateAccountPermissions,
   updateSettings,
 } from "../storage/metadata-store";
 import { assertTrustedShellSender } from "./sender-validation";
@@ -148,4 +153,59 @@ export function registerIpcHandlers(): void {
     await removeAccount(accountId);
     return { ok: true as const };
   });
+
+  ipcMain.handle(ipcChannels.permissionsGet, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    const account = getAccount(accountId);
+    if (!account) {
+      throw new Error("Unknown account");
+    }
+    return {
+      accountId: account.id,
+      notificationsEnabled: account.notificationsEnabled,
+      notificationSoundEnabled: account.notificationSoundEnabled,
+      unreadBadgeEnabled: account.unreadBadgeEnabled,
+      microphonePermission: account.microphonePermission,
+      cameraPermission: account.cameraPermission,
+      displayCapturePermission: account.displayCapturePermission,
+    };
+  });
+
+  ipcMain.handle(ipcChannels.permissionsUpdate, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = updateAccountPermissionsSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid permissions patch");
+    }
+    const updated = updateAccountPermissions(
+      parsed.data.accountId,
+      parsed.data.patch,
+    );
+    return {
+      accountId: updated.id,
+      notificationsEnabled: updated.notificationsEnabled,
+      notificationSoundEnabled: updated.notificationSoundEnabled,
+      unreadBadgeEnabled: updated.unreadBadgeEnabled,
+      microphonePermission: updated.microphonePermission,
+      cameraPermission: updated.cameraPermission,
+      displayCapturePermission: updated.displayCapturePermission,
+    };
+  });
+
+  ipcMain.handle(
+    ipcChannels.permissionsRespondPrompt,
+    (event, payload: unknown) => {
+      assertTrustedShellSender(event);
+      const parsed = permissionPromptResponseSchema.safeParse(payload);
+      if (!parsed.success) {
+        throw new Error("Invalid prompt response");
+      }
+      const ok = respondToShellPrompt(
+        parsed.data.requestId,
+        parsed.data.decision,
+      );
+      return { ok };
+    },
+  );
 }

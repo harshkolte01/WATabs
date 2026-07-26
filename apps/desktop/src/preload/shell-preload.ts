@@ -5,8 +5,29 @@ import type {
   AppInfo,
   AppSettings,
   CreateAccountInput,
+  PermissionPreference,
   WindowState,
 } from "@multi-whatsapp/shared-types";
+
+export type PermissionPromptPayload = {
+  requestId: string;
+  kind: "permission" | "http-external";
+  accountId?: string;
+  accountLabel?: string;
+  permission?: string;
+  url?: string;
+  message: string;
+};
+
+export type AccountPermissions = {
+  accountId: string;
+  notificationsEnabled: boolean;
+  notificationSoundEnabled: boolean;
+  unreadBadgeEnabled: boolean;
+  microphonePermission: PermissionPreference;
+  cameraPermission: PermissionPreference;
+  displayCapturePermission: PermissionPreference;
+};
 
 /**
  * Narrow shell bridge only. Do not expose a generic channel invoke helper.
@@ -44,6 +65,44 @@ const accountsApi = {
   },
 };
 
+const permissionsApi = {
+  get: (accountId: string): Promise<AccountPermissions> =>
+    ipcRenderer.invoke(ipcChannels.permissionsGet, accountId),
+  update: (
+    accountId: string,
+    patch: Partial<Omit<AccountPermissions, "accountId">>,
+  ): Promise<AccountPermissions> =>
+    ipcRenderer.invoke(ipcChannels.permissionsUpdate, { accountId, patch }),
+  respondPrompt: (
+    requestId: string,
+    decision:
+      | "allow-once"
+      | "allow-always"
+      | "block"
+      | "deny"
+      | "open"
+      | "cancel",
+  ): Promise<{ ok: boolean }> =>
+    ipcRenderer.invoke(ipcChannels.permissionsRespondPrompt, {
+      requestId,
+      decision,
+    }),
+  onPrompt: (
+    callback: (payload: PermissionPromptPayload) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      payload: PermissionPromptPayload,
+    ) => {
+      callback(payload);
+    };
+    ipcRenderer.on(ipcChannels.permissionsPrompt, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.permissionsPrompt, listener);
+    };
+  },
+};
+
 const desktop = {
   getAppInfo: (): Promise<AppInfo> =>
     ipcRenderer.invoke(ipcChannels.getAppInfo),
@@ -56,6 +115,7 @@ const desktop = {
   updateSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
     ipcRenderer.invoke(ipcChannels.updateSettings, patch),
   accounts: accountsApi,
+  permissions: permissionsApi,
 };
 
 contextBridge.exposeInMainWorld("desktop", desktop);

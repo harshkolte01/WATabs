@@ -262,3 +262,43 @@ button:disabled {
 .confirm-box p {
   margin: 0 0 8px;
 }
+
+.perm-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.perm-controls label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.perm-controls select {
+  border: 1px solid var(--border);
+  background: #243038;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+}
+
+.prompt-box {
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px;
+  background: #10241c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.prompt-box p {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+  color: var(--text);
+}
