@@ -1,0 +1,5 @@
+node_modules/
+dist/
+smoke-last.json
+*.log
+.DS_Store

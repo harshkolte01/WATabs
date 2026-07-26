@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["src/**/*", "forge.config.ts", "vitest.config.ts", "vite.*.config.ts"],
+  "references": [
+    { "path": "../../packages/shared-types" },
+    { "path": "../../packages/validation" }
+  ]
+}

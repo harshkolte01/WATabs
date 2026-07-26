@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  foundation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Ensure Electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Build packages
+        run: pnpm --filter @multi-whatsapp/shared-types --filter @multi-whatsapp/validation run build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit and security tests
+        run: pnpm test:unit
+
+      - name: Prohibited pattern scan
+        run: pnpm verify:no-injection
+
+      - name: Package desktop
+        run: pnpm package
+
+      - name: Verify fuses
+        run: pnpm verify:fuses

@@ -1,0 +1,37 @@
+{
+  "name": "multi-whatsapp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Multi-account WhatsApp Web desktop workspace (monorepo)",
+  "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js && node scripts/ensure-electron-link.cjs",
+    "dev": "pnpm --filter @multi-whatsapp/desktop start",
+    "start": "pnpm --filter @multi-whatsapp/desktop start",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "test:unit": "pnpm --filter @multi-whatsapp/desktop test:unit",
+    "package": "pnpm --filter @multi-whatsapp/desktop package",
+    "verify:no-injection": "tsx scripts/verify-no-injection.ts",
+    "verify:fuses": "tsx scripts/verify-fuses.ts",
+    "security": "pnpm verify:no-injection"
+  },
+  "devDependencies": {
+    "@electron/fuses": "1.8.0",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "electron-winstaller"
+    ]
+  }
+}

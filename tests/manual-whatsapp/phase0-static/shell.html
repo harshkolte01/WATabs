@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; connect-src 'none'"
+    />
+    <title>Desktop Shell</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: Segoe UI, system-ui, sans-serif;
+        background: #1a1f24;
+        color: #e8eef2;
+        user-select: none;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 100%;
+        padding: 0 12px;
+      }
+      .brand {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin-right: 8px;
+        opacity: 0.85;
+      }
+      button {
+        border: 1px solid #3a4550;
+        background: #243038;
+        color: #e8eef2;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #2e3b45;
+      }
+      button.active {
+        background: #0f6b4c;
+        border-color: #14966a;
+      }
+      .meta {
+        margin-left: auto;
+        font-size: 11px;
+        opacity: 0.65;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <span class="brand">Multi Account Desktop</span>
+      <button type="button" id="btn-a" data-account="a">Account A</button>
+      <button type="button" id="btn-b" data-account="b">Account B</button>
+      <span class="meta" id="meta">Loading…</span>
+    </div>
+    <script>
+      const api = window.desktopShell;
+      const btnA = document.getElementById("btn-a");
+      const btnB = document.getElementById("btn-b");
+      const meta = document.getElementById("meta");
+
+      function setActive(key) {
+        btnA.classList.toggle("active", key === "a");
+        btnB.classList.toggle("active", key === "b");
+        meta.textContent = "Active: Account " + key.toUpperCase();
+      }
+
+      btnA.addEventListener("click", () => api.switchAccount("a"));
+      btnB.addEventListener("click", () => api.switchAccount("b"));
+
+      api.getActiveAccount().then(setActive);
+      api.onActiveAccount(setActive);
+    </script>
+  </body>
+</html>
