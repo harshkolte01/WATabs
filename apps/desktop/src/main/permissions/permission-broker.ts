@@ -224,12 +224,20 @@ async function askUser(
   permission: string,
   family: PermissionFamily,
 ): Promise<PromptDecision> {
+  const human =
+    family === "microphone"
+      ? "microphone"
+      : family === "camera"
+        ? "camera"
+        : family === "display-capture"
+          ? "screen"
+          : family;
   return requestShellPrompt({
     kind: "permission",
     accountId,
     accountLabel,
     permission,
-    message: `“${accountLabel}” is requesting ${family} access for WhatsApp Web.`,
+    message: `“${accountLabel}” wants to use your ${human} for WhatsApp Web.`,
   });
 }
 

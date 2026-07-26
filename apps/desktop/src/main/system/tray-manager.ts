@@ -1,4 +1,5 @@
-import { Menu, Tray, app, nativeImage } from "electron";
+import { Menu, Tray } from "electron";
+import { loadAppIcon } from "../assets/app-icon";
 import {
   listAccountRecords,
   selectAccount,
@@ -6,7 +7,6 @@ import {
 import { getSettings, updateSettings } from "../storage/metadata-store";
 import { log } from "../diagnostics/log-manager";
 import {
-  getMainWindow,
   hideMainWindowToTray,
   showMainWindow,
 } from "../windows/main-window";
@@ -28,10 +28,10 @@ export function createTray(): void {
     return;
   }
 
-  // 16x16 empty template — Electron accepts; OS may show default if blank.
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon.isEmpty() ? nativeImage.createFromDataURL(TRANSPARENT_PNG) : icon);
-  tray.setToolTip("Multi Account Desktop");
+  const traySize = process.platform === "win32" ? 16 : 22;
+  const icon = loadAppIcon(traySize);
+  tray = new Tray(icon);
+  tray.setToolTip("WATabs");
   tray.on("double-click", () => {
     showMainWindow();
     setRunningInTray(false);
@@ -132,10 +132,3 @@ export function hideToTray(): void {
   setRunningInTray(true);
   rebuildTrayMenu();
 }
-
-const TRANSPARENT_PNG =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-
-// Keep app reference for future icon asset loading.
-void app;
-void getMainWindow;

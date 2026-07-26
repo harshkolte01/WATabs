@@ -4,6 +4,7 @@ import {
   accountIdSchema,
   closeToTrayChoiceSchema,
   createAccountInputSchema,
+  downloadIdSchema,
   ipcChannels,
   permissionPromptResponseSchema,
   renameAccountInputSchema,
@@ -13,6 +14,16 @@ import {
   updateAccountPermissionsSchema,
   updateSettingsSchema,
 } from "@multi-whatsapp/validation";
+import {
+  cancelDownload,
+  chooseDownloadDirectory,
+  clearHistory,
+  listDownloadsForUi,
+  openDownload,
+  pauseDownload,
+  resumeDownload,
+  showDownloadInFolder,
+} from "../downloads/download-manager";
 import {
   clearAccountSession,
   createAccount,
@@ -248,6 +259,50 @@ export function registerIpcHandlers(): void {
       remember: parsed.data.remember,
     });
     return { ok };
+  });
+
+  ipcMain.handle(ipcChannels.downloadsList, (event) => {
+    assertTrustedShellSender(event);
+    return listDownloadsForUi();
+  });
+
+  ipcMain.handle(ipcChannels.downloadsCancel, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    return cancelDownload(downloadIdSchema.parse(payload));
+  });
+
+  ipcMain.handle(ipcChannels.downloadsPause, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    return pauseDownload(downloadIdSchema.parse(payload));
+  });
+
+  ipcMain.handle(ipcChannels.downloadsResume, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    return resumeDownload(downloadIdSchema.parse(payload));
+  });
+
+  ipcMain.handle(ipcChannels.downloadsShowInFolder, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    return showDownloadInFolder(downloadIdSchema.parse(payload));
+  });
+
+  ipcMain.handle(ipcChannels.downloadsOpen, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    return openDownload(downloadIdSchema.parse(payload));
+  });
+
+  ipcMain.handle(ipcChannels.downloadsClearHistory, (event) => {
+    assertTrustedShellSender(event);
+    return clearHistory();
+  });
+
+  ipcMain.handle(ipcChannels.downloadsChooseDirectory, async (event) => {
+    assertTrustedShellSender(event);
+    const dir = await chooseDownloadDirectory();
+    if (dir) {
+      updateSettings({ downloadDirectory: dir });
+    }
+    return { path: dir };
   });
 
   void getBadgeSnapshot;

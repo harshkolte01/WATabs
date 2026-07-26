@@ -9,16 +9,22 @@ import type {
 } from "@multi-whatsapp/shared-types";
 import type {
   ClosePromptPayload,
+  DownloadUiRecord,
   PermissionPromptPayload,
 } from "../preload/shell-preload";
+import brandMark from "./assets/icon.png";
 
-type Tab = "accounts" | "settings";
+type Tab = "accounts" | "downloads" | "permissions" | "settings";
 
 type ConfirmAction =
   | { kind: "clearSession"; accountId: string; label: string }
   | { kind: "remove"; accountId: string; label: string };
 
-const PREF_OPTIONS: PermissionPreference[] = ["ask", "allow", "block"];
+const PREF_OPTIONS: { value: PermissionPreference; label: string }[] = [
+  { value: "ask", label: "Ask each time" },
+  { value: "allow", label: "Allow" },
+  { value: "block", label: "Block" },
+];
 
 export function App() {
   const [tab, setTab] = useState<Tab>("accounts");
@@ -43,6 +49,7 @@ export function App() {
   const [badges, setBadges] = useState<AccountBadgeState[]>([]);
   const [diagnostics, setDiagnostics] =
     useState<NotificationDiagnostics | null>(null);
+  const [downloads, setDownloads] = useState<DownloadUiRecord[]>([]);
 
   const refreshAccounts = useCallback(async () => {
     const result = await window.desktop.accounts.list();
@@ -82,6 +89,13 @@ export function App() {
         unsubs.push(
           window.desktop.notifications.onBadgesChanged((next) => {
             setBadges(next);
+          }),
+        );
+        const initialDownloads = await window.desktop.downloads.list();
+        if (!cancelled) setDownloads(initialDownloads);
+        unsubs.push(
+          window.desktop.downloads.onChanged((items) => {
+            setDownloads(items);
           }),
         );
       } catch (err) {
@@ -209,7 +223,10 @@ export function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">Multi Account Desktop</div>
+        <div className="brand" aria-label="WATabs">
+          <img className="brand-mark" src={brandMark} alt="" />
+          <span className="brand-name">WATabs</span>
+        </div>
         {prompt ? (
           <div className="prompt-box" role="dialog" aria-modal="true">
             <p>{prompt.message}</p>
@@ -529,8 +546,8 @@ export function App() {
                           }
                         >
                           {PREF_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
                             </option>
                           ))}
                         </select>
@@ -548,8 +565,8 @@ export function App() {
                           }
                         >
                           {PREF_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
                             </option>
                           ))}
                         </select>
@@ -567,8 +584,8 @@ export function App() {
                           }
                         >
                           {PREF_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
                             </option>
                           ))}
                         </select>
@@ -590,13 +607,268 @@ export function App() {
         </button>
         <button
           type="button"
+          className={tab === "downloads" ? "nav-active" : ""}
+          onClick={() => setTab("downloads")}
+        >
+          Downloads
+        </button>
+        <button
+          type="button"
+          className={tab === "permissions" ? "nav-active" : ""}
+          onClick={() => setTab("permissions")}
+        >
+          Permissions
+        </button>
+        <button
+          type="button"
           className={tab === "settings" ? "nav-active" : ""}
           onClick={() => setTab("settings")}
         >
           Settings
         </button>
+        {tab === "downloads" ? (
+          <div className="settings sidebar-settings downloads-panel">
+            <p className="hint">
+              Files save to your Downloads folder (or the folder you choose).
+              History is metadata only — clearing it never deletes files.
+            </p>
+            <button
+              type="button"
+              disabled={busy || downloads.length === 0}
+              onClick={() =>
+                void run(() => window.desktop.downloads.clearHistory())
+              }
+            >
+              Clear history
+            </button>
+            <ul className="download-list">
+              {downloads.length === 0 ? (
+                <li className="hint">No downloads yet.</li>
+              ) : (
+                downloads.map((item) => (
+                  <li key={item.id} className="download-item">
+                    <div className="download-name">
+                      {item.filename}
+                      {item.isExecutable ? (
+                        <span className="pill">Executable</span>
+                      ) : null}
+                    </div>
+                    <div className="hint">
+                      {item.state}
+                      {item.totalBytes
+                        ? ` · ${Math.min(
+                            100,
+                            Math.round(
+                              (item.receivedBytes / item.totalBytes) * 100,
+                            ),
+                          )}%`
+                        : ""}
+                    </div>
+                    <div className="account-actions">
+                      {item.canPause ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void run(() =>
+                              window.desktop.downloads.pause(item.id),
+                            )
+                          }
+                        >
+                          Pause
+                        </button>
+                      ) : null}
+                      {item.canResume ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void run(() =>
+                              window.desktop.downloads.resume(item.id),
+                            )
+                          }
+                        >
+                          Resume
+                        </button>
+                      ) : null}
+                      {item.state === "progressing" ||
+                      item.state === "starting" ||
+                      item.state === "paused" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void run(() =>
+                              window.desktop.downloads.cancel(item.id),
+                            )
+                          }
+                        >
+                          Cancel
+                        </button>
+                      ) : null}
+                      {item.state === "completed" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void run(() =>
+                                window.desktop.downloads.showInFolder(item.id),
+                              )
+                            }
+                          >
+                            Show in folder
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void run(() =>
+                                window.desktop.downloads.open(item.id),
+                              )
+                            }
+                          >
+                            Open
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        ) : null}
+        {tab === "permissions" ? (
+          <div className="settings sidebar-settings">
+            <p className="hint">
+              Media access is limited to WhatsApp Web for the selected account.
+              Display capture asks every time while set to Ask.
+            </p>
+            {!selectedAccountId ? (
+              <p className="hint">Select an account to edit permissions.</p>
+            ) : (
+              (() => {
+                const account = accounts.find((a) => a.id === selectedAccountId);
+                if (!account) return null;
+                return (
+                  <div className="perm-panel">
+                    <strong>{account.label}</strong>
+                    <label>
+                      <span>Notifications</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void onPermissionPatch(account.id, {
+                            notificationsEnabled: !account.notificationsEnabled,
+                          })
+                        }
+                      >
+                        {account.notificationsEnabled ? "On" : "Off"}
+                      </button>
+                    </label>
+                    <label>
+                      <span>Microphone</span>
+                      <select
+                        value={account.microphonePermission}
+                        onChange={(e) =>
+                          void onPermissionPatch(account.id, {
+                            microphonePermission: e.target
+                              .value as PermissionPreference,
+                          })
+                        }
+                      >
+                        {PREF_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Camera</span>
+                      <select
+                        value={account.cameraPermission}
+                        onChange={(e) =>
+                          void onPermissionPatch(account.id, {
+                            cameraPermission: e.target
+                              .value as PermissionPreference,
+                          })
+                        }
+                      >
+                        {PREF_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Screen share</span>
+                      <select
+                        value={account.displayCapturePermission}
+                        onChange={(e) =>
+                          void onPermissionPatch(account.id, {
+                            displayCapturePermission: e.target
+                              .value as PermissionPreference,
+                          })
+                        }
+                      >
+                        {PREF_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        ) : null}
         {tab === "settings" ? (
           <div className="settings sidebar-settings">
+            <div className="nav-label">Downloads</div>
+            <div className="row">
+              <span>Ask where to save</span>
+              <button
+                type="button"
+                onClick={() =>
+                  void patchSettings({
+                    askWhereToSaveEachFile: !settings?.askWhereToSaveEachFile,
+                  })
+                }
+              >
+                {settings?.askWhereToSaveEachFile ? "On" : "Off"}
+              </button>
+            </div>
+            <div className="row">
+              <span>Save folder</span>
+              <button
+                type="button"
+                onClick={() =>
+                  void window.desktop.downloads.chooseDirectory().then(() =>
+                    window.desktop.getSettings().then(setSettings),
+                  )
+                }
+              >
+                Choose…
+              </button>
+            </div>
+            <div className="hint">
+              {settings?.downloadDirectory ?? "System Downloads"}
+            </div>
+            <div className="row">
+              <span>Warn on executables</span>
+              <button
+                type="button"
+                onClick={() =>
+                  void patchSettings({
+                    warnOnExecutableDownload:
+                      !settings?.warnOnExecutableDownload,
+                  })
+                }
+              >
+                {settings?.warnOnExecutableDownload ? "On" : "Off"}
+              </button>
+            </div>
+            <div className="nav-label">Notifications</div>
             <div className="row">
               <span>Global notifications</span>
               <button

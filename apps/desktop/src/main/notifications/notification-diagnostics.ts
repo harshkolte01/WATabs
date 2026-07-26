@@ -49,7 +49,7 @@ export function sendShellTestNotification(): {
   }
 
   const notification = new Notification({
-    title: "Multi Account Desktop test",
+    title: "WATabs test",
     body: "This is an application test notification, not a WhatsApp message.",
     silent: false,
   });

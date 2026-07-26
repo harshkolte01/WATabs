@@ -65,6 +65,18 @@ function mergeSettings(raw: Record<string, unknown>): AppSettings {
       typeof raw.startHiddenInTray === "boolean"
         ? raw.startHiddenInTray
         : DEFAULT_SETTINGS.startHiddenInTray,
+    askWhereToSaveEachFile:
+      typeof raw.askWhereToSaveEachFile === "boolean"
+        ? raw.askWhereToSaveEachFile
+        : DEFAULT_SETTINGS.askWhereToSaveEachFile,
+    downloadDirectory:
+      typeof raw.downloadDirectory === "string" || raw.downloadDirectory === null
+        ? (raw.downloadDirectory as string | null)
+        : DEFAULT_SETTINGS.downloadDirectory,
+    warnOnExecutableDownload:
+      typeof raw.warnOnExecutableDownload === "boolean"
+        ? raw.warnOnExecutableDownload
+        : DEFAULT_SETTINGS.warnOnExecutableDownload,
   };
 }
 
@@ -144,6 +156,16 @@ const toV3: Migration = (input) => {
     settings: mergeSettings(v2.settings ?? {}),
     accounts,
     lastSelectedAccountId: v2.lastSelectedAccountId,
+  };
+};
+
+const toV4: Migration = (input) => {
+  const raw = asPartialMeta(input);
+  const v3 = toV3(raw) as AppMetadata;
+  return {
+    ...v3,
+    schemaVersion: 4,
+    settings: mergeSettings(v3.settings as unknown as Record<string, unknown>),
   } satisfies AppMetadata;
 };
 
@@ -151,10 +173,11 @@ const migrations: Record<number, Migration> = {
   1: toV1,
   2: toV2,
   3: toV3,
+  4: toV4,
 };
 
 export function createDefaultMetadata(): AppMetadata {
-  return toV3({}) as AppMetadata;
+  return toV4({}) as AppMetadata;
 }
 
 export function migrateMetadata(raw: unknown): AppMetadata {

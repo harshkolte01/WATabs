@@ -15,6 +15,7 @@ import {
   setLastSelectedAccountId,
   upsertAccount,
 } from "../storage/metadata-store";
+import { cancelDownloadsForAccount } from "../downloads/download-manager";
 import { clearAccountPartition } from "./session-cleanup";
 import {
   createAndAttachAccountView,
@@ -234,6 +235,7 @@ export async function removeAccount(accountId: string): Promise<void> {
     throw new Error("Unknown account");
   }
   const remainingBefore = listAccounts().filter((a) => a.id !== accountId);
+  cancelDownloadsForAccount(accountId);
   destroyAccountView(accountId);
   await clearAccountPartition(account.partition);
   removeAccountRecord(accountId);

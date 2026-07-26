@@ -34,4 +34,16 @@ describe("notification privacy (P1/D1)", () => {
     expect(redacted.body).toBe("[redacted]");
     expect(redacted.allowed).toBe(true);
   });
+
+  it("redacts download source URLs in logs", () => {
+    const redacted = sanitizeLogFields({
+      accountId: "a0000000-0000-4000-8000-000000000001",
+      filename: "photo.jpg",
+      state: "completed",
+      url: "https://mmg.whatsapp.net/secret/file",
+    });
+    expect(redacted.url).toBe("[redacted]");
+    expect(redacted.filename).toBe("photo.jpg");
+    expect(String(redacted.filename)).not.toMatch(/https?:\/\//);
+  });
 });

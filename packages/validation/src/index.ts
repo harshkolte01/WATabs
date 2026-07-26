@@ -19,7 +19,34 @@ export const appSettingsSchema = z.object({
   closeToTray: z.boolean().nullable(),
   startAtLogin: z.boolean(),
   startHiddenInTray: z.boolean(),
+  askWhereToSaveEachFile: z.boolean(),
+  downloadDirectory: z.string().nullable(),
+  warnOnExecutableDownload: z.boolean(),
 });
+
+export const downloadStateSchema = z.enum([
+  "starting",
+  "progressing",
+  "paused",
+  "completed",
+  "cancelled",
+  "interrupted",
+]);
+
+export const downloadRecordSchema = z.object({
+  id: z.string().uuid(),
+  accountId: z.string().uuid(),
+  filename: z.string().min(1),
+  targetPath: z.string().optional(),
+  receivedBytes: z.number().nonnegative(),
+  totalBytes: z.number().nonnegative().optional(),
+  state: downloadStateSchema,
+  startedAt: z.string().min(1),
+  completedAt: z.string().optional(),
+  interruptReason: z.string().optional(),
+});
+
+export const downloadIdSchema = z.string().uuid();
 
 export const permissionPreferenceSchema = z.enum(["ask", "allow", "block"]);
 
@@ -153,6 +180,15 @@ export const ipcChannels = {
   notificationsBadgesChanged: "desktop:notifications:badges-changed",
   windowCloseDecision: "desktop:window:close-decision",
   windowClosePrompt: "desktop:window:close-prompt",
+  downloadsList: "desktop:downloads:list",
+  downloadsCancel: "desktop:downloads:cancel",
+  downloadsPause: "desktop:downloads:pause",
+  downloadsResume: "desktop:downloads:resume",
+  downloadsShowInFolder: "desktop:downloads:show-in-folder",
+  downloadsClearHistory: "desktop:downloads:clear-history",
+  downloadsChooseDirectory: "desktop:downloads:choose-directory",
+  downloadsOpen: "desktop:downloads:open",
+  downloadsChanged: "desktop:downloads:changed",
 } as const;
 
 export type IpcChannel = (typeof ipcChannels)[keyof typeof ipcChannels];

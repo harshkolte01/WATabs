@@ -80,4 +80,14 @@ describe("permission-broker", () => {
       }),
     ).toBe(false);
   });
+
+  it("display-capture ask still prompts (M2)", () => {
+    expect(
+      decidePermissionSync({
+        originOk: true,
+        family: "display-capture",
+        pref: "ask",
+      }),
+    ).toBe("ask");
+  });
 });

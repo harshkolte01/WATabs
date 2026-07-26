@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
@@ -5,17 +6,24 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
+const iconBase = path.resolve(__dirname, "assets/icon");
+
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    name: "multi-whatsapp-desktop",
-    executableName: "multi-whatsapp-desktop",
+    name: "WATabs",
+    executableName: "WATabs",
     appBundleId: "com.multiwhatsapp.desktop",
     // Keep aligned with APP_USER_MODEL_ID in shared-types.
+    icon: iconBase,
+    extraResource: [path.resolve(__dirname, "assets")],
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({
+      name: "WATabs",
+      setupIcon: `${iconBase}.ico`,
+    }),
     new MakerZIP({}, ["darwin", "linux"]),
   ],
   plugins: [

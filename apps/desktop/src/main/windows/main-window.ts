@@ -1,6 +1,7 @@
 import path from "node:path";
 import { BrowserWindow, WebContentsView } from "electron";
 import { ipcChannels } from "@multi-whatsapp/validation";
+import { loadAppIcon } from "../assets/app-icon";
 import { log } from "../diagnostics/log-manager";
 import { shellIndexUrl } from "../protocol/app-protocol";
 import {
@@ -83,6 +84,7 @@ export function createMainWindow(options: { show?: boolean } = {}): BrowserWindo
   const initial = resolveInitialWindowState();
   const settings = getSettings();
 
+  const windowIcon = loadAppIcon();
   mainWindow = new BrowserWindow({
     x: initial.bounds.x,
     y: initial.bounds.y,
@@ -90,7 +92,8 @@ export function createMainWindow(options: { show?: boolean } = {}): BrowserWindo
     height: initial.bounds.height,
     show: false,
     backgroundColor: "#0f1418",
-    title: "Multi Account Desktop",
+    title: "WATabs",
+    icon: windowIcon.isEmpty() ? undefined : windowIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -99,6 +102,11 @@ export function createMainWindow(options: { show?: boolean } = {}): BrowserWindo
       webviewTag: false,
     },
   });
+
+  // Re-apply after create — Windows taskbar sometimes ignores constructor icon in dev.
+  if (!windowIcon.isEmpty()) {
+    mainWindow.setIcon(windowIcon);
+  }
 
   if (initial.isMaximized) {
     mainWindow.maximize();

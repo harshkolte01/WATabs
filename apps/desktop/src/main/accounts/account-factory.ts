@@ -27,7 +27,7 @@ export function createAccountWebContentsView(
   const accountSession = sessionForPartition(partition);
 
   attachSessionPermissionHandlers(accountSession, id, label);
-  attachDownloadHandlers(accountSession, label);
+  attachDownloadHandlers(accountSession, id);
 
   const view = new WebContentsView({
     webPreferences: {

@@ -22,6 +22,31 @@ export interface AppSettings {
   closeToTray: boolean | null;
   startAtLogin: boolean;
   startHiddenInTray: boolean;
+  askWhereToSaveEachFile: boolean;
+  /** null → OS Downloads directory */
+  downloadDirectory: string | null;
+  warnOnExecutableDownload: boolean;
+}
+
+export type DownloadState =
+  | "starting"
+  | "progressing"
+  | "paused"
+  | "completed"
+  | "cancelled"
+  | "interrupted";
+
+export interface DownloadRecord {
+  id: string;
+  accountId: string;
+  filename: string;
+  targetPath?: string;
+  receivedBytes: number;
+  totalBytes?: number;
+  state: DownloadState;
+  startedAt: string;
+  completedAt?: string;
+  interruptReason?: string;
 }
 
 export interface AccountRecord {
@@ -117,9 +142,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   closeToTray: null,
   startAtLogin: false,
   startHiddenInTray: false,
+  askWhereToSaveEachFile: false,
+  downloadDirectory: null,
+  warnOnExecutableDownload: true,
 };
 
-export const CURRENT_SCHEMA_VERSION = 3 as const;
+export const CURRENT_SCHEMA_VERSION = 4 as const;
 
 export function partitionName(accountId: string): string {
   return `persist:wa-${accountId}`;

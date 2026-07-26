@@ -6,10 +6,17 @@ import type {
   AppInfo,
   AppSettings,
   CreateAccountInput,
+  DownloadRecord,
   NotificationDiagnostics,
   PermissionPreference,
   WindowState,
 } from "@multi-whatsapp/shared-types";
+
+export type DownloadUiRecord = DownloadRecord & {
+  isExecutable: boolean;
+  canPause: boolean;
+  canResume: boolean;
+};
 
 export type PermissionPromptPayload = {
   requestId: string;
@@ -135,6 +142,37 @@ const notificationsApi = {
   },
 };
 
+const downloadsApi = {
+  list: (): Promise<DownloadUiRecord[]> =>
+    ipcRenderer.invoke(ipcChannels.downloadsList),
+  cancel: (id: string): Promise<DownloadUiRecord> =>
+    ipcRenderer.invoke(ipcChannels.downloadsCancel, id),
+  pause: (id: string): Promise<DownloadUiRecord> =>
+    ipcRenderer.invoke(ipcChannels.downloadsPause, id),
+  resume: (id: string): Promise<DownloadUiRecord> =>
+    ipcRenderer.invoke(ipcChannels.downloadsResume, id),
+  showInFolder: (id: string): Promise<{ ok: true }> =>
+    ipcRenderer.invoke(ipcChannels.downloadsShowInFolder, id),
+  open: (id: string): Promise<{ ok: true }> =>
+    ipcRenderer.invoke(ipcChannels.downloadsOpen, id),
+  clearHistory: (): Promise<{ ok: true }> =>
+    ipcRenderer.invoke(ipcChannels.downloadsClearHistory),
+  chooseDirectory: (): Promise<{ path: string | null }> =>
+    ipcRenderer.invoke(ipcChannels.downloadsChooseDirectory),
+  onChanged: (callback: (items: DownloadUiRecord[]) => void): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      items: DownloadUiRecord[],
+    ) => {
+      callback(items);
+    };
+    ipcRenderer.on(ipcChannels.downloadsChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.downloadsChanged, listener);
+    };
+  },
+};
+
 const desktop = {
   getAppInfo: (): Promise<AppInfo> =>
     ipcRenderer.invoke(ipcChannels.getAppInfo),
@@ -149,6 +187,7 @@ const desktop = {
   accounts: accountsApi,
   permissions: permissionsApi,
   notifications: notificationsApi,
+  downloads: downloadsApi,
   onClosePrompt: (
     callback: (payload: ClosePromptPayload) => void,
   ): (() => void) => {
