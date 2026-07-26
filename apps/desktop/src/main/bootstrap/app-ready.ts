@@ -21,6 +21,7 @@ import {
   syncLoginItemSettings,
   wasOpenedAsHidden,
 } from "../system/startup-manager";
+import { installApplicationMenu } from "../windows/application-menu";
 import {
   createMainWindow,
   notifyShellAccountsChanged,
@@ -35,6 +36,7 @@ export function configureAppIdentity(): void {
 }
 
 export async function onAppReady(): Promise<void> {
+  installApplicationMenu();
   registerAppProtocolHandler();
   loadMetadata();
   checkUnexpectedRestart();

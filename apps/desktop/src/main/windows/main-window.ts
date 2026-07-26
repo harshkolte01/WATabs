@@ -1,6 +1,10 @@
 import path from "node:path";
-import { BrowserWindow, WebContentsView } from "electron";
+import { BrowserWindow, WebContentsView, app } from "electron";
 import { ipcChannels } from "@multi-whatsapp/validation";
+import {
+  isDevToolsShortcut,
+  shellDevToolsEnabled,
+} from "../accounts/devtools-policy";
 import { loadAppIcon } from "../assets/app-icon";
 import { log } from "../diagnostics/log-manager";
 import { shellIndexUrl } from "../protocol/app-protocol";
@@ -50,6 +54,7 @@ export function hideMainWindowToTray(): void {
 }
 
 function createShellView(): WebContentsView {
+  const allowDevTools = shellDevToolsEnabled(app.isPackaged);
   const view = new WebContentsView({
     webPreferences: {
       partition: "persist:desktop-shell",
@@ -61,8 +66,17 @@ function createShellView(): WebContentsView {
       allowRunningInsecureContent: false,
       webviewTag: false,
       spellcheck: false,
+      devTools: allowDevTools,
     },
   });
+
+  if (!allowDevTools) {
+    view.webContents.on("before-input-event", (event, input) => {
+      if (isDevToolsShortcut(input)) {
+        event.preventDefault();
+      }
+    });
+  }
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     void view.webContents.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);

@@ -23,8 +23,9 @@ function findElectronBinary(dir: string): string | null {
       const nested = findElectronBinary(full);
       if (nested) return nested;
     } else if (
-      entry.name === "multi-whatsapp-desktop.exe" ||
-      entry.name === "multi-whatsapp-desktop"
+      // Match forge packagerConfig.executableName ("WATabs").
+      entry.name === "WATabs.exe" ||
+      entry.name === "WATabs"
     ) {
       return full;
     }

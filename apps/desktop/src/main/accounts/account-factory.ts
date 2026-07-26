@@ -6,7 +6,10 @@ import { registerAccountWebContents } from "../notifications/notification-coordi
 import { attachNavigationPolicy } from "../navigation/navigation-policy";
 import { attachSessionPermissionHandlers } from "../permissions/session-permissions";
 import { getAccount } from "../storage/metadata-store";
-import { accountViewDevToolsEnabled } from "./devtools-policy";
+import {
+  accountViewDevToolsEnabled,
+  isDevToolsShortcut,
+} from "./devtools-policy";
 import { attachDownloadHandlers } from "./downloads";
 import { sessionForPartition } from "./session-factory";
 
@@ -59,12 +62,7 @@ export function createAccountWebContentsView(
 
   if (app.isPackaged) {
     view.webContents.on("before-input-event", (event, input) => {
-      const key = input.key?.toLowerCase();
-      if (
-        input.type === "keyDown" &&
-        (key === "f12" ||
-          (input.control && input.shift && (key === "i" || key === "j" || key === "c")))
-      ) {
+      if (isDevToolsShortcut(input)) {
         event.preventDefault();
       }
     });
