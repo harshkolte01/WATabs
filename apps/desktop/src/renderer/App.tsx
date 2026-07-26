@@ -50,6 +50,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [menuAccountId, setMenuAccountId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addLabel, setAddLabel] = useState("");
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
@@ -182,7 +183,20 @@ export function App() {
   }
 
   async function onSelect(accountId: string): Promise<void> {
+    setMenuAccountId(null);
+    setTab("accounts");
+    await window.desktop.setMainMode("workspace");
     await run(() => window.desktop.accounts.select(accountId));
+  }
+
+  async function openTab(next: Tab): Promise<void> {
+    setTab(next);
+    setMenuAccountId(null);
+    if (next === "accounts") {
+      await window.desktop.setMainMode("workspace");
+      return;
+    }
+    await window.desktop.setMainMode("panel");
   }
 
   async function onRename(accountId: string): Promise<void> {
@@ -284,6 +298,13 @@ export function App() {
   }
 
   const locked = Boolean(lockStatus?.locked);
+
+  useEffect(() => {
+    if (locked) {
+      setMenuAccountId(null);
+      setRenameId(null);
+    }
+  }, [locked]);
 
   return (
     <div className="app">
@@ -487,6 +508,8 @@ export function App() {
         <ul className="account-list">
           {accounts.map((account) => {
             const active = account.id === selectedAccountId;
+            const menuOpen = account.id === menuAccountId;
+            const recoveryStatus = recoveryFor(account.id)?.status;
             return (
               <li
                 key={account.id}
@@ -496,154 +519,144 @@ export function App() {
                   account.enabled ? "" : "disabled",
                 ].join(" ")}
               >
-                <button
-                  type="button"
-                  className="account-select"
-                  disabled={busy || !account.enabled || Boolean(lockStatus?.locked)}
-                  onClick={() => void onSelect(account.id)}
-                >
-                  <span className="account-label">
-                    {accountDisplayLabel(account)}
-                  </span>
-                  {badgeFor(account.id)?.attention && !lockStatus?.locked ? (
-                    <span className="pill badge-pill">
-                      {badgeFor(account.id)?.count ?? "•"}
+                <div className="account-row">
+                  <button
+                    type="button"
+                    className="account-select"
+                    disabled={
+                      busy || !account.enabled || Boolean(lockStatus?.locked)
+                    }
+                    onClick={() => void onSelect(account.id)}
+                  >
+                    <span className="account-label">
+                      {accountDisplayLabel(account)}
                     </span>
-                  ) : null}
-                  {!account.enabled ? (
-                    <span className="pill">Disabled</span>
-                  ) : null}
-                  {recoveryFor(account.id)?.status &&
-                  recoveryFor(account.id)!.status !== "ok" ? (
-                    <span className="pill warn-pill">
-                      {recoveryFor(account.id)!.status.replace(/_/g, " ")}
+                    <span className="account-pills">
+                      {badgeFor(account.id)?.attention &&
+                      !lockStatus?.locked ? (
+                        <span className="pill badge-pill">
+                          {badgeFor(account.id)?.count ?? "•"}
+                        </span>
+                      ) : null}
+                      {!account.enabled ? (
+                        <span className="pill">Off</span>
+                      ) : null}
+                      {recoveryStatus && recoveryStatus !== "ok" ? (
+                        <span className="pill warn-pill">!</span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </button>
-                {renameId === account.id ? (
-                  <div className="inline-form">
-                    <input
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      maxLength={64}
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onRename(account.id)}
-                    >
-                      Save
-                    </button>
-                    <button type="button" onClick={() => setRenameId(null)}>
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="account-actions">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          setRenameId(account.id);
-                          setRenameValue(account.label);
-                        }}
-                      >
-                        Rename
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onMove(account.id, -1)}
-                      >
-                        Up
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onMove(account.id, 1)}
-                      >
-                        Down
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onToggleEnabled(account)}
-                      >
-                        {account.enabled ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy || !account.enabled || Boolean(lockStatus?.locked)}
-                        onClick={() => void onReload(account.id)}
-                      >
-                        Reload
-                      </button>
-                      {recoveryFor(account.id)?.status ===
-                        "needs_manual_recovery" ||
-                      recoveryFor(account.id)?.status === "crashed" ||
-                      recoveryFor(account.id)?.status === "load_failed" ? (
+                  </button>
+                  <button
+                    type="button"
+                    className="account-menu-btn"
+                    aria-label="Account menu"
+                    aria-expanded={menuOpen}
+                    disabled={busy || Boolean(lockStatus?.locked)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuAccountId(menuOpen ? null : account.id);
+                      setRenameId(null);
+                    }}
+                  >
+                    {menuOpen ? "▴" : "▾"}
+                  </button>
+                </div>
+                {menuOpen ? (
+                  <div className="account-menu">
+                    {renameId === account.id ? (
+                      <div className="inline-form">
+                        <input
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          maxLength={64}
+                          autoFocus
+                        />
                         <button
                           type="button"
-                          disabled={busy || Boolean(lockStatus?.locked)}
-                          onClick={() =>
-                            void run(() =>
-                              window.desktop.recovery.retry(account.id),
-                            )
-                          }
+                          disabled={busy}
+                          onClick={() => void onRename(account.id)}
                         >
-                          Retry recovery
+                          Save
                         </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          setConfirm({
-                            kind: "clearSession",
-                            accountId: account.id,
-                            label: account.label,
-                          })
-                        }
-                      >
-                        Clear session
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          setConfirm({
-                            kind: "remove",
-                            accountId: account.id,
-                            label: account.label,
-                          })
-                        }
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div className="perm-controls">
-                      <label>
-                        <span>Notifications</span>
+                        <button type="button" onClick={() => setRenameId(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="account-menu-actions">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setRenameId(account.id);
+                            setRenameValue(account.label);
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void onMove(account.id, -1)}
+                        >
+                          Move up
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void onMove(account.id, 1)}
+                        >
+                          Move down
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void onToggleEnabled(account)}
+                        >
+                          {account.enabled ? "Disable" : "Enable"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            busy ||
+                            !account.enabled ||
+                            Boolean(lockStatus?.locked)
+                          }
+                          onClick={() => void onReload(account.id)}
+                        >
+                          Reload
+                        </button>
+                        {recoveryStatus === "needs_manual_recovery" ||
+                        recoveryStatus === "crashed" ||
+                        recoveryStatus === "load_failed" ? (
+                          <button
+                            type="button"
+                            disabled={busy || Boolean(lockStatus?.locked)}
+                            onClick={() =>
+                              void run(() =>
+                                window.desktop.recovery.retry(account.id),
+                              )
+                            }
+                          >
+                            Retry recovery
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() =>
                             void onPermissionPatch(account.id, {
-                              notificationsEnabled: !account.notificationsEnabled,
+                              notificationsEnabled:
+                                !account.notificationsEnabled,
                             })
                           }
                         >
+                          Notifications:{" "}
                           {account.notificationsEnabled ? "On" : "Off"}
                         </button>
-                      </label>
-                      <label>
-                        <span>Audio mute</span>
                         <button
                           type="button"
                           disabled={busy}
-                          title="Mutes all audio from this account, including calls and media."
                           onClick={() =>
                             void run(() =>
                               window.desktop.accounts.setAudioMuted(
@@ -653,83 +666,39 @@ export function App() {
                             )
                           }
                         >
-                          {account.audioMuted ? "Muted" : "On"}
+                          Audio: {account.audioMuted ? "Muted" : "On"}
                         </button>
-                      </label>
-                      <label>
-                        <span>Badge</span>
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() =>
-                            void onPermissionPatch(account.id, {
-                              unreadBadgeEnabled: !account.unreadBadgeEnabled,
+                            setConfirm({
+                              kind: "clearSession",
+                              accountId: account.id,
+                              label: account.label,
                             })
                           }
                         >
-                          {account.unreadBadgeEnabled ? "On" : "Off"}
+                          Clear session
                         </button>
-                      </label>
-                      <label>
-                        <span>Mic</span>
-                        <select
-                          value={account.microphonePermission}
+                        <button
+                          type="button"
+                          className="danger"
                           disabled={busy}
-                          onChange={(e) =>
-                            void onPermissionPatch(account.id, {
-                              microphonePermission: e.target
-                                .value as PermissionPreference,
+                          onClick={() =>
+                            setConfirm({
+                              kind: "remove",
+                              accountId: account.id,
+                              label: account.label,
                             })
                           }
                         >
-                          {PREF_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        <span>Camera</span>
-                        <select
-                          value={account.cameraPermission}
-                          disabled={busy}
-                          onChange={(e) =>
-                            void onPermissionPatch(account.id, {
-                              cameraPermission: e.target
-                                .value as PermissionPreference,
-                            })
-                          }
-                        >
-                          {PREF_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        <span>Display</span>
-                        <select
-                          value={account.displayCapturePermission}
-                          disabled={busy}
-                          onChange={(e) =>
-                            void onPermissionPatch(account.id, {
-                              displayCapturePermission: e.target
-                                .value as PermissionPreference,
-                            })
-                          }
-                        >
-                          {PREF_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </>
-                )}
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </li>
             );
           })}
@@ -738,33 +707,69 @@ export function App() {
         <button
           type="button"
           className={tab === "accounts" ? "nav-active" : ""}
-          onClick={() => setTab("accounts")}
+          onClick={() => void openTab("accounts")}
         >
           Workspace
         </button>
         <button
           type="button"
           className={tab === "downloads" ? "nav-active" : ""}
-          onClick={() => setTab("downloads")}
+          onClick={() => void openTab("downloads")}
         >
           Downloads
         </button>
         <button
           type="button"
           className={tab === "permissions" ? "nav-active" : ""}
-          onClick={() => setTab("permissions")}
+          onClick={() => void openTab("permissions")}
         >
           Permissions
         </button>
         <button
           type="button"
           className={tab === "settings" ? "nav-active" : ""}
-          onClick={() => setTab("settings")}
+          onClick={() => void openTab("settings")}
         >
           Settings
         </button>
+
+        <div className="meta">
+          Isolated WhatsApp Web sessions. Shell stays local-only.
+          {info ? (
+            <>
+              <br />
+              Electron {info.electron}
+            </>
+          ) : null}
+        </div>
+      </aside>
+      <main className="main">
+        <section
+          className={
+            tab === "accounts"
+              ? "content-pane"
+              : "content-pane content-pane-panel"
+          }
+        >
+          {tab === "accounts" && accounts.length === 0 ? (
+            <div className="empty">
+              <strong>No accounts yet</strong>
+              <p>
+                Add an account to open the official WhatsApp Web interface in
+                an isolated local session. Scan the QR code with your phone
+                when it appears.
+              </p>
+              <button
+                type="button"
+                disabled={busy || adding}
+                onClick={() => openAddForm()}
+              >
+                Add your first account
+              </button>
+            </div>
+          ) : null}
         {tab === "downloads" ? (
-          <div className="settings sidebar-settings downloads-panel">
+          <div className="settings main-panel downloads-panel">
             <p className="hint">
               Files save to your Downloads folder (or the folder you choose).
               History is metadata only — clearing it never deletes files.
@@ -872,7 +877,7 @@ export function App() {
           </div>
         ) : null}
         {tab === "permissions" ? (
-          <div className="settings sidebar-settings">
+          <div className="settings main-panel">
             <p className="hint">
               Media access is limited to WhatsApp Web for the selected account.
               Display capture asks every time while set to Ask.
@@ -960,7 +965,7 @@ export function App() {
           </div>
         ) : null}
         {tab === "settings" ? (
-          <div className="settings sidebar-settings">
+          <div className="settings main-panel">
             <div className="nav-label">Downloads</div>
             <div className="row">
               <span>Ask where to save</span>
@@ -1106,7 +1111,7 @@ export function App() {
                     onChange={(e) =>
                       setEnablePin(e.target.value.replace(/\D/g, ""))
                     }
-                    placeholder="4–8 digits"
+                    placeholder="4ΓÇô8 digits"
                   />
                 </label>
                 <label className="field">
@@ -1365,35 +1370,6 @@ export function App() {
             ) : null}
           </div>
         ) : null}
-        <div className="meta">
-          Isolated WhatsApp Web sessions. Shell stays local-only.
-          {info ? (
-            <>
-              <br />
-              Electron {info.electron}
-            </>
-          ) : null}
-        </div>
-      </aside>
-      <main className="main">
-        <section className="content-pane">
-          {accounts.length === 0 ? (
-            <div className="empty">
-              <strong>No accounts yet</strong>
-              <p>
-                Add an account to open the official WhatsApp Web interface in
-                an isolated local session. Scan the QR code with your phone
-                when it appears.
-              </p>
-              <button
-                type="button"
-                disabled={busy || adding}
-                onClick={() => openAddForm()}
-              >
-                Add your first account
-              </button>
-            </div>
-          ) : null}
         </section>
       </main>
     </div>

@@ -5,28 +5,41 @@ on:
     branches: [main, master]
   pull_request:
 
-jobs:
-  foundation:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-      - uses: pnpm/action-setup@v4
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Typecheck, tests, package
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10.24.0
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
-      - name: Install
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Ensure Electron binary
         run: node node_modules/electron/install.js
 
-      - name: Build packages
+      - name: Build shared packages
         run: pnpm --filter @multi-whatsapp/shared-types --filter @multi-whatsapp/validation run build
 
       - name: Typecheck
@@ -35,11 +48,15 @@ jobs:
       - name: Unit, security, and integration tests
         run: pnpm test:unit
 
-      - name: Prohibited pattern scan
+      - name: Verify no WhatsApp injection / prohibited patterns
         run: pnpm verify:no-injection
 
-      - name: Package desktop
+      - name: Package desktop (WATabs)
         run: pnpm package
 
-      - name: Verify fuses
+      - name: Verify Electron fuses
         run: pnpm verify:fuses
+
+      - name: Dependency audit (informational)
+        continue-on-error: true
+        run: pnpm audit --prod

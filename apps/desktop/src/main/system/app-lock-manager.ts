@@ -138,6 +138,11 @@ export function lockApp(reason = "manual"): void {
   }
   selectedBeforeLock = getSelectedAccountId() ?? getViewSelectedId();
   locked = true;
+  void import("../accounts/account-view-manager").then(
+    ({ setShellMainMode }) => {
+      setShellMainMode("workspace");
+    },
+  );
   selectAccountView(null);
   clearAutoLockTimer();
   log("info", "app_locked", { reason });

@@ -11,6 +11,9 @@ import { log } from "../diagnostics/log-manager";
 const views = new Map<string, AccountViewHandle>();
 let selectedId: string | null = null;
 let hostWindow: BrowserWindow | null = null;
+/** When true, WhatsApp views stay hidden so shell main panels are visible. */
+let shellPanelMode = false;
+let selectionBeforePanel: string | null = null;
 
 export function bindViewHost(win: BrowserWindow): void {
   hostWindow = win;
@@ -51,12 +54,51 @@ export function selectAccountView(accountId: string | null): void {
   if (accountId && !views.has(accountId)) {
     throw new Error("Account view is not loaded");
   }
+  if (shellPanelMode && accountId) {
+    // Leaving shell panel to show WhatsApp.
+    shellPanelMode = false;
+    selectionBeforePanel = null;
+  }
   selectedId = accountId;
   relayout();
   if (accountId) {
     const handle = views.get(accountId);
     handle?.view.webContents.focus();
   }
+}
+
+/**
+ * workspace — show selected WhatsApp view.
+ * panel — hide all WhatsApp views so shell main content (settings/downloads) is visible.
+ */
+export function setShellMainMode(mode: "workspace" | "panel"): void {
+  if (mode === "panel") {
+    if (!shellPanelMode) {
+      selectionBeforePanel = selectedId;
+      selectedId = null;
+      shellPanelMode = true;
+      relayout();
+    }
+    return;
+  }
+  if (!shellPanelMode) {
+    return;
+  }
+  shellPanelMode = false;
+  const restore = selectionBeforePanel;
+  selectionBeforePanel = null;
+  if (restore && views.has(restore)) {
+    selectedId = restore;
+    relayout();
+    views.get(restore)?.view.webContents.focus();
+    return;
+  }
+  selectedId = null;
+  relayout();
+}
+
+export function isShellPanelMode(): boolean {
+  return shellPanelMode;
 }
 
 export function reloadAccountView(accountId: string): void {

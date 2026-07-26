@@ -256,6 +256,8 @@ const desktop = {
     ipcRenderer.invoke(ipcChannels.getSettings),
   updateSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
     ipcRenderer.invoke(ipcChannels.updateSettings, patch),
+  setMainMode: (mode: "workspace" | "panel"): Promise<{ ok: true }> =>
+    ipcRenderer.invoke(ipcChannels.shellSetMainMode, mode),
   accounts: accountsApi,
   permissions: permissionsApi,
   notifications: notificationsApi,

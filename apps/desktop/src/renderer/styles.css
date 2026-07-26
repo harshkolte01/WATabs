@@ -110,6 +110,25 @@ body,
   pointer-events: auto;
 }
 
+.content-pane-panel {
+  pointer-events: auto;
+  background: var(--bg);
+  overflow: auto;
+}
+
+.main-panel {
+  max-width: 720px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.main-panel h2,
+.main-panel .nav-label:first-child {
+  margin-top: 0;
+}
+
 .empty {
   max-width: 520px;
   border: 1px dashed var(--border);
@@ -257,7 +276,7 @@ button:disabled {
 .account-item {
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px;
+  padding: 4px;
   background: #141b21;
 }
 
@@ -269,19 +288,73 @@ button:disabled {
   opacity: 0.7;
 }
 
+.account-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+
 .account-select {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   background: transparent;
+  padding: 8px 8px;
+}
+
+.account-menu-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.account-menu {
+  margin-top: 4px;
+  padding: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.account-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-menu-actions button {
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  padding: 6px 8px;
+  background: #1a2229;
+}
+
+.account-menu-actions button.danger {
+  color: #ff8e8e;
 }
 
 .account-label {
   font-weight: 600;
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.account-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .pill {

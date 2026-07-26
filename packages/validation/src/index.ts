@@ -50,6 +50,8 @@ export const unlockInputSchema = z.object({
   pin: pinSchema,
 });
 
+export const shellMainModeSchema = z.enum(["workspace", "panel"]);
+
 export const configureLockInputSchema = z.object({
   autoLockMinutes: autoLockMinutesSchema.optional(),
   lockOnOsLock: z.boolean().optional(),
@@ -202,6 +204,7 @@ export const ipcChannels = {
   resetWindowState: "desktop:reset-window-state",
   getSettings: "desktop:get-settings",
   updateSettings: "desktop:update-settings",
+  shellSetMainMode: "desktop:shell:set-main-mode",
   accountsList: "desktop:accounts:list",
   accountsCreate: "desktop:accounts:create",
   accountsSelect: "desktop:accounts:select",

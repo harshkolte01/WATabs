@@ -13,10 +13,12 @@ import {
   reorderAccountsInputSchema,
   setAudioMutedInputSchema,
   setEnabledInputSchema,
+  shellMainModeSchema,
   unlockInputSchema,
   updateAccountPermissionsSchema,
   updateSettingsSchema,
 } from "@multi-whatsapp/validation";
+import { setShellMainMode } from "../accounts/account-view-manager";
 import {
   createSupportBundle,
   previewSupportBundle,
@@ -111,6 +113,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(ipcChannels.getSettings, (event) => {
     assertTrustedShellSender(event);
     return getSettings();
+  });
+
+  ipcMain.handle(ipcChannels.shellSetMainMode, (event, payload: unknown) => {
+    shellActivity(event);
+    const mode = shellMainModeSchema.parse(payload);
+    setShellMainMode(mode);
+    return { ok: true as const, mode };
   });
 
   ipcMain.handle(ipcChannels.updateSettings, (event, payload: unknown) => {
