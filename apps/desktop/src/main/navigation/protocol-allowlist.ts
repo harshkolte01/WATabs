@@ -18,6 +18,9 @@ const BLOCKED_SCHEMES = new Set([
   "ms-appx-web:",
   "blob:",
   "about:",
+  // Never hand our shell protocol (or the old generic name) to the OS.
+  "app:",
+  "watabs:",
 ]);
 
 export function parseUrlSafe(raw: string): URL | null {

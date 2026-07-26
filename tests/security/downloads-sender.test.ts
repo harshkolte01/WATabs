@@ -24,7 +24,7 @@ describe("downloads IPC sender wall (F5)", () => {
   it("allows shell", () => {
     expect(() =>
       assertTrustedShellSender({
-        senderFrame: { url: "app://shell/index.html" },
+        senderFrame: { url: "watabs://shell/index.html" },
       } as never),
     ).not.toThrow();
   });

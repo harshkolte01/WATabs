@@ -22,6 +22,6 @@ pnpm --filter @multi-whatsapp/desktop start
 
 ## Security notes
 
-- Production shell loads via `app://shell/` (dev uses Vite HMR URL).
+- Production shell loads via `watabs://shell/` (dev uses Vite HMR URL).
 - Only `src/preload/shell-preload.ts` exposes `window.desktop` named methods.
 - WhatsApp views are not part of Phase 1 default start.

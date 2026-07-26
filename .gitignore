@@ -16,3 +16,4 @@ apps/desktop/.vite/
 *.p12
 
 implementation_plan.md
+.tmp-tools/

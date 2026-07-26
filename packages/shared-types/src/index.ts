@@ -197,7 +197,8 @@ export interface NotificationDiagnostics {
   lastTestOk: boolean | null;
 }
 
-export const APP_SCHEME = "app";
+/** Custom shell protocol — must stay unique (never generic "app"; Windows shows OS dialogs for unknown app: links). */
+export const APP_SCHEME = "watabs";
 export const APP_HOST = "shell";
 export const SHELL_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 

@@ -84,10 +84,25 @@ function createShellView(): WebContentsView {
   } else {
     void view.webContents.loadURL(shellIndexUrl());
     log("info", "shell_loaded_app_protocol", {
-      scheme: "app",
+      scheme: "watabs",
       host: "shell",
     });
   }
+
+  // Never let shell popups/hand-offs send custom protocols to the OS
+  // (avoids Windows “Get an app to open this 'app'/'watabs' link”).
+  view.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) {
+      void import("../navigation/external-link-policy").then(
+        ({ openValidatedExternalUrl }) => {
+          void openValidatedExternalUrl(url);
+        },
+      );
+    } else {
+      log("warn", "shell_popup_blocked", {});
+    }
+    return { action: "deny" };
+  });
 
   void MAIN_WINDOW_VITE_NAME;
   return view;

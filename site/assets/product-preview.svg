@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 680" width="1120" height="680" role="img" aria-label="WATabs multi-account desktop workspace preview">
+  <title>WATabs product preview</title>
+  <desc>Desktop shell with isolated account sidebar. Official WhatsApp Web loads in the content area.</desc>
+  <defs>
+    <linearGradient id="winBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#141a20"/>
+      <stop offset="100%" stop-color="#0f1418"/>
+    </linearGradient>
+    <linearGradient id="panelBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1c252d"/>
+      <stop offset="100%" stop-color="#171e25"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4fd6ff"/>
+      <stop offset="100%" stop-color="#2f6bff"/>
+    </linearGradient>
+    <filter id="shadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1120" height="680" fill="#0b0f12"/>
+  <rect x="48" y="36" width="1024" height="608" rx="14" fill="url(#winBg)" stroke="#2a3640" stroke-width="1" filter="url(#shadow)"/>
+
+  <rect x="48" y="36" width="1024" height="40" rx="14" fill="#151c22"/>
+  <rect x="48" y="56" width="1024" height="20" fill="#151c22"/>
+  <circle cx="72" cy="56" r="5" fill="#ff5f57"/>
+  <circle cx="90" cy="56" r="5" fill="#febc2e"/>
+  <circle cx="108" cy="56" r="5" fill="#28c840"/>
+  <text x="560" y="61" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" font-weight="600" fill="#9aa7b2">WATabs</text>
+
+  <rect x="48" y="76" width="240" height="568" fill="url(#panelBg)"/>
+  <line x1="288" y1="76" x2="288" y2="644" stroke="#2a3640" stroke-width="1"/>
+
+  <g transform="translate(68 98)">
+    <rect width="28" height="28" rx="8" fill="url(#mark)"/>
+    <path d="M8 12c0-3 2.5-5.5 6.5-5.5h5c4 0 6.5 2.5 6.5 5.5v5c0 3-2.5 5.5-6.5 5.5H16l-3.5 3v-3C9 20.5 8 18 8 17z" fill="#e8eef2" opacity="0.95"/>
+    <text x="40" y="20" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" fill="#e8eef2">WATabs</text>
+  </g>
+
+  <text x="68" y="156" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="0.08em" fill="#6b7a86">ACCOUNTS</text>
+
+  <g transform="translate(60 172)">
+    <rect width="216" height="52" rx="10" fill="#141b21" stroke="#2a3640" stroke-width="1"/>
+    <circle cx="28" cy="26" r="8" fill="#14966a"/>
+    <text x="48" y="24" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eef2">Personal</text>
+    <text x="48" y="40" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" fill="#7a8793">Isolated session</text>
+    <circle cx="196" cy="18" r="5" fill="#23d0ff"/>
+  </g>
+
+  <g transform="translate(60 234)">
+    <rect width="216" height="52" rx="10" fill="#162028" stroke="#23d0ff" stroke-width="1.4" stroke-opacity="0.55"/>
+    <rect x="0" y="12" width="3" height="28" rx="1.5" fill="#23d0ff"/>
+    <circle cx="28" cy="26" r="8" fill="#0f766e"/>
+    <text x="48" y="24" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="700" fill="#e8eef2">Business</text>
+    <text x="48" y="40" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" fill="#7a8793">Active</text>
+    <circle cx="196" cy="26" r="10" fill="#14966a" opacity="0.25"/>
+    <text x="196" y="30" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" font-weight="700" fill="#7fd4b0">1</text>
+  </g>
+
+  <g transform="translate(60 296)">
+    <rect width="216" height="52" rx="10" fill="#141b21" stroke="#2a3640" stroke-width="1"/>
+    <circle cx="28" cy="26" r="8" fill="#2f6bff"/>
+    <text x="48" y="24" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eef2">Support</text>
+    <text x="48" y="40" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" fill="#7a8793">Isolated session</text>
+  </g>
+
+  <g transform="translate(60 580)">
+    <rect width="216" height="40" rx="10" fill="#12181e" stroke="#2a3640" stroke-width="1" stroke-dasharray="4 4"/>
+    <text x="108" y="25" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" font-weight="600" fill="#8a98a4">+ Add account</text>
+  </g>
+
+  <rect x="288" y="76" width="784" height="568" fill="#10161b"/>
+  <g transform="translate(500 280)" opacity="0.95">
+    <rect x="100" y="0" width="56" height="56" rx="14" fill="#1a2430" stroke="#2f6bff" stroke-width="1.2" stroke-opacity="0.45"/>
+    <path d="M118 22h20v4h-20zm0 10h14v4h-14zm0 10h18v4h-18z" fill="#9aa7b2"/>
+    <text x="128" y="88" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="650" fill="#e8eef2">Official WhatsApp Web</text>
+    <text x="128" y="114" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" fill="#7a8793">Loads here in an isolated session - no injection, no scraping</text>
+  </g>
+
+  <text x="560" y="620" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" fill="#55626e">Local-first · Session isolation · Native notifications</text>
+</svg>

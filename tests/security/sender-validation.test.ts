@@ -11,10 +11,10 @@ vi.mock("../../apps/desktop/src/main/diagnostics/log-manager", () => ({
 import { assertTrustedShellSender } from "../../apps/desktop/src/main/ipc/sender-validation";
 
 describe("assertTrustedShellSender", () => {
-  it("allows app://shell origin", () => {
+  it("allows watabs://shell origin", () => {
     expect(() =>
       assertTrustedShellSender({
-        senderFrame: { url: "app://shell/index.html" },
+        senderFrame: { url: "watabs://shell/index.html" },
       } as never),
     ).not.toThrow();
   });

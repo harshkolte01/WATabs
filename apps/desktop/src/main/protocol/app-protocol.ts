@@ -4,8 +4,8 @@ import { net, protocol } from "electron";
 import { APP_HOST, APP_SCHEME } from "@multi-whatsapp/shared-types";
 
 /**
- * Register privileged app:// scheme before app ready.
- * Production shell loads via app://shell/ — never remote content.
+ * Register privileged watabs:// scheme before app ready.
+ * Production shell loads via watabs://shell/ — never remote content.
  */
 export function registerAppSchemePrivileged(): void {
   protocol.registerSchemesAsPrivileged([

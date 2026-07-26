@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="WATabs — Multiple accounts. One secure workspace.">
+  <title>WATabs</title>
+  <desc>Multiple WhatsApp Web accounts. One secure desktop app.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1418"/>
+      <stop offset="55%" stop-color="#141b21"/>
+      <stop offset="100%" stop-color="#1a2229"/>
+    </linearGradient>
+    <linearGradient id="sweepGrad" x1="0%" y1="50%" x2="100%" y2="50%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#14966a" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#0f766e" stop-opacity="0.14"/>
+      <stop offset="50%" stop-color="#2f6bff" stop-opacity="0.16"/>
+      <stop offset="70%" stop-color="#23d0ff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#23d0ff" stop-opacity="0"/>
+      <animateTransform attributeName="gradientTransform" type="translate" values="-0.45 0;0.45 0;-0.45 0" dur="8s" repeatCount="indefinite"/>
+    </linearGradient>
+    <linearGradient id="markGrad" x1="12%" y1="8%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#4fd6ff"/>
+      <stop offset="55%" stop-color="#2f6bff"/>
+      <stop offset="100%" stop-color="#1a4fd6"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2f6bff"/>
+      <stop offset="100%" stop-color="#23d0ff"/>
+    </linearGradient>
+    <linearGradient id="tabActiveStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#23d0ff" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#2f6bff" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="dotGlow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="bannerClip">
+      <rect width="1200" height="420" rx="16"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#bannerClip)">
+    <rect width="1200" height="420" fill="url(#bgGrad)"/>
+    <rect width="1200" height="420" fill="url(#sweepGrad)"/>
+
+    <circle cx="210" cy="110" r="150" fill="#14966a" opacity="0.055">
+      <animate attributeName="opacity" values="0.04;0.07;0.04" dur="8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1020" cy="310" r="170" fill="#2f6bff" opacity="0.05">
+      <animate attributeName="opacity" values="0.035;0.065;0.035" dur="8s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Layered logo mark -->
+    <g transform="translate(140 118)">
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 6;0 0;0 0;0 6" keyTimes="0;0.2;0.85;1" dur="8s" repeatCount="indefinite"/>
+        <rect x="22" y="4" width="86" height="86" rx="20" fill="#1a2430" stroke="#2c3a48" stroke-width="1.25" opacity="0.7"/>
+      </g>
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 8;0 0;0 0;0 8" keyTimes="0;0.24;0.82;1" dur="8s" begin="0.12s" repeatCount="indefinite"/>
+        <rect x="11" y="14" width="94" height="94" rx="22" fill="#1f2c38" stroke="#354555" stroke-width="1.25" opacity="0.9"/>
+      </g>
+      <g filter="url(#softGlow)">
+        <animateTransform attributeName="transform" type="translate" values="0 10;0 0;0 0;0 10" keyTimes="0;0.28;0.8;1" dur="8s" begin="0.22s" repeatCount="indefinite"/>
+        <rect x="0" y="24" width="100" height="100" rx="24" fill="url(#markGrad)"/>
+        <rect x="0" y="24" width="100" height="100" rx="24" fill="none" stroke="url(#accentLine)" stroke-width="1.2" opacity="0.5">
+          <animate attributeName="opacity" values="0.35;0.65;0.35" dur="8s" begin="0.22s" repeatCount="indefinite"/>
+        </rect>
+        <!-- Abstract message mark -->
+        <path d="M28 58c0-10 8-18 22-18h20c14 0 22 8 22 18v18c0 10-8 18-22 18H58l-12 10v-10c-14 0-18-8-18-18z" fill="#e8eef2" opacity="0.95"/>
+        <circle cx="42" cy="70" r="3.2" fill="#2f6bff"/>
+        <circle cx="55" cy="70" r="3.2" fill="#2f6bff"/>
+        <circle cx="68" cy="70" r="3.2" fill="#2f6bff"/>
+      </g>
+    </g>
+
+    <!-- Brand + tagline -->
+    <g transform="translate(292 142)">
+      <text x="0" y="40" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="-0.8" fill="#e8eef2">WATabs</text>
+      <text x="0" y="84" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="23" font-weight="400" fill="#9aa7b2">Multiple accounts. One secure workspace.</text>
+      <rect x="0" y="104" width="64" height="3" rx="1.5" fill="url(#accentLine)" opacity="0.9">
+        <animate attributeName="width" values="52;86;52" dur="8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.55;0.95;0.55" dur="8s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <!-- Account tabs -->
+    <g transform="translate(292 286)">
+      <!-- Personal -->
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 8;0 0;0 0;0 8" keyTimes="0;0.22;0.85;1" dur="8s" repeatCount="indefinite"/>
+        <rect x="0" y="0" width="150" height="46" rx="12" fill="#1a2229" stroke="#2a3640" stroke-width="1.2"/>
+        <circle cx="28" cy="23" r="7" fill="#14966a" opacity="0.9"/>
+        <text x="46" y="28" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="500" fill="#c5d0d8">Personal</text>
+        <g filter="url(#dotGlow)">
+          <circle cx="132" cy="14" r="5" fill="#23d0ff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+            <animate attributeName="r" values="4.2;5.3;4.2" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+      </g>
+
+      <!-- Business (active) -->
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 10;0 0;0 0;0 10" keyTimes="0;0.26;0.82;1" dur="8s" begin="0.1s" repeatCount="indefinite"/>
+        <rect x="166" y="0" width="172" height="46" rx="12" fill="#162028" stroke="url(#tabActiveStroke)" stroke-width="1.8">
+          <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="8s" begin="0.1s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="166" y="0" width="172" height="46" rx="12" fill="none" stroke="#23d0ff" stroke-width="1" opacity="0.25">
+          <animate attributeName="opacity" values="0.15;0.4;0.15" dur="8s" begin="0.1s" repeatCount="indefinite"/>
+        </rect>
+        <circle cx="194" cy="23" r="7" fill="#0f766e"/>
+        <text x="212" y="28" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="600" fill="#e8eef2">Business</text>
+        <circle cx="304" cy="23" r="10" fill="#14966a" opacity="0.22"/>
+        <text x="304" y="27" text-anchor="middle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="11" font-weight="700" fill="#7fd4b0">1</text>
+      </g>
+
+      <!-- Support -->
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 8;0 0;0 0;0 8" keyTimes="0;0.3;0.8;1" dur="8s" begin="0.2s" repeatCount="indefinite"/>
+        <rect x="354" y="0" width="144" height="46" rx="12" fill="#1a2229" stroke="#2a3640" stroke-width="1.2"/>
+        <circle cx="382" cy="23" r="7" fill="#2f6bff" opacity="0.85"/>
+        <text x="400" y="28" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="500" fill="#c5d0d8">Support</text>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -6,30 +6,30 @@
     <title>Privacy · WATabs</title>
     <meta
       name="description"
-      content="WATabs privacy stub: local sessions, no WhatsApp content scraping, optional redacted diagnostics."
+      content="WATabs privacy: local sessions, no WhatsApp content scraping, optional redacted diagnostics."
     />
     <link rel="icon" href="./assets/icon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="banner" data-update-banner role="status"></div>
-    <header class="site-header">
+    <div class="banner" data-update-banner hidden role="status"></div>
+    <header class="site-header" data-header>
       <div class="wrap nav">
-        <a class="nav-brand" href="./index.html" data-nav="index">
-          <img src="./assets/watabs-logo.png" alt="" width="32" height="32" />
+        <a class="nav-brand" href="./" data-nav="index">
+          <img src="./assets/watabs-icon.svg" alt="" width="32" height="32" />
           <span>WATabs</span>
         </a>
         <ul class="nav-links">
-          <li><a href="./phase7.html" data-nav="phase7">Phase 7</a></li>
+          <li><a href="./#features">Features</a></li>
           <li><a href="./updates.html" data-nav="updates">Updates</a></li>
           <li><a href="./privacy.html" data-nav="privacy">Privacy</a></li>
-          <li><a href="#" data-repo>GitHub</a></li>
+          <li><a href="https://github.com/harshkolte01/WATabs" data-repo>GitHub</a></li>
         </ul>
       </div>
     </header>
@@ -39,18 +39,16 @@
         <header class="page-head">
           <h1>Privacy</h1>
           <p>
-            Short stub for the public site. A full policy will ship with the
-            production release (Phase 8).
+            Short public summary. A fuller policy will ship with the production
+            release.
           </p>
         </header>
 
         <h2>What stays on your device</h2>
         <ul>
-          <li>
-            WhatsApp Web session data in per-account Electron partitions
-          </li>
+          <li>WhatsApp Web session data in per-account Electron partitions</li>
           <li>Local labels, settings, download history metadata, optional PIN verifier</li>
-          <li>Application logs with redaction rules — no message bodies</li>
+          <li>Application logs with redaction — no message bodies</li>
         </ul>
 
         <h2>What WATabs does not do</h2>
@@ -69,15 +67,15 @@
 
         <h2>Diagnostics</h2>
         <p>
-          Support bundles are opt-in and redacted. You choose when to export
-          them; they are not uploaded automatically.
+          Support bundles are opt-in and redacted. Nothing is uploaded
+          automatically.
         </p>
 
-        <h2>Updates (Phase 7)</h2>
+        <h2>This website</h2>
         <p>
-          When auto-update exists, the app contacts GitHub Releases (or the
-          configured feed) to check versions. That check does not include your
-          chats or account contents.
+          The download button asks GitHub’s public Releases API for the latest
+          asset name and URL. That request does not include your chats or
+          WhatsApp accounts.
         </p>
       </div>
     </main>

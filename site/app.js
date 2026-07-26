@@ -1,70 +1,181 @@
 /**
- * WATabs site config — change RELEASES_URL when the GitHub repo moves.
+ * WATabs site — config, nav, GitHub Releases download wiring.
+ * Fetches latest release in-browser (CORS-friendly); falls back to /releases/latest.
  */
 const CONFIG = {
-  releasesUrl: "https://github.com/harshkolte01/WATabs/releases/latest",
-  repoUrl: "https://github.com/harshkolte01/WATabs",
-  statusUrl: "./phase7-status.json",
+  owner: "harshkolte01",
+  repo: "WATabs",
+  cacheKey: "watabs:latest-release:v1",
+  cacheTtlMs: 10 * 60 * 1000,
 };
 
-const STATUS_LABELS = {
-  not_started: "Not started",
-  in_progress: "In progress",
-  done: "Done",
-};
+const releasesPageUrl = () =>
+  `https://github.com/${CONFIG.owner}/${CONFIG.repo}/releases/latest`;
+const repoUrl = () => `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
+const apiLatestUrl = () =>
+  `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/releases/latest`;
 
-function wireDownloadLinks() {
+function detectPlatform() {
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  if (/Mac|iPhone|iPad|iPod/i.test(ua) || /Mac/i.test(platform)) return "mac";
+  if (/Win/i.test(ua) || /Win/i.test(platform)) return "win";
+  return "other";
+}
+
+function isWinSetup(name) {
+  return /^WATabs/i.test(name) && /\.Setup\.exe$/i.test(name);
+}
+
+function isMacZip(name) {
+  return /^WATabs/i.test(name) && /darwin/i.test(name) && /\.zip$/i.test(name);
+}
+
+function isJunk(name) {
+  return (
+    /\.nupkg$/i.test(name) ||
+    /^RELEASES$/i.test(name) ||
+    /^sbom\.json$/i.test(name) ||
+    /^SHA256SUMS/i.test(name) ||
+    /^WATabs\.exe$/i.test(name)
+  );
+}
+
+function pickAsset(assets, platform) {
+  const list = (assets || []).filter((a) => a?.name && !isJunk(a.name));
+  if (platform === "win") {
+    return list.find((a) => isWinSetup(a.name)) || null;
+  }
+  if (platform === "mac") {
+    const zips = list.filter((a) => isMacZip(a.name));
+    if (!zips.length) return null;
+    const arm = zips.find((a) => /arm64|aarch64/i.test(a.name));
+    return arm || zips[0];
+  }
+  return list.find((a) => isWinSetup(a.name)) || list[0] || null;
+}
+
+function formatMb(bytes) {
+  if (typeof bytes !== "number" || !Number.isFinite(bytes)) return null;
+  return `${(bytes / 1e6).toFixed(0)} MB`;
+}
+
+async function fetchLatestRelease() {
+  try {
+    const raw = sessionStorage.getItem(CONFIG.cacheKey);
+    if (raw) {
+      const { at, data } = JSON.parse(raw);
+      if (Date.now() - at < CONFIG.cacheTtlMs) return data;
+    }
+  } catch {
+    /* ignore cache */
+  }
+
+  const res = await fetch(apiLatestUrl(), {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (res.status === 403 || res.status === 429 || res.status === 404) {
+    throw new Error(`release-${res.status}`);
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  try {
+    sessionStorage.setItem(
+      CONFIG.cacheKey,
+      JSON.stringify({ at: Date.now(), data }),
+    );
+  } catch {
+    /* quota */
+  }
+  return data;
+}
+
+function wireStaticLinks() {
+  const fallback = releasesPageUrl();
   document.querySelectorAll("[data-download]").forEach((el) => {
-    el.setAttribute("href", CONFIG.releasesUrl);
+    if (!el.getAttribute("href") || el.getAttribute("href") === "#") {
+      el.setAttribute("href", fallback);
+    }
   });
   document.querySelectorAll("[data-repo]").forEach((el) => {
-    el.setAttribute("href", CONFIG.repoUrl);
+    el.setAttribute("href", repoUrl());
+  });
+  document.querySelectorAll("[data-releases]").forEach((el) => {
+    el.setAttribute("href", fallback);
   });
 }
 
-function setBanner(autoUpdateLive) {
-  const banner = document.querySelector("[data-update-banner]");
-  if (!banner) return;
-  if (autoUpdateLive) {
-    banner.hidden = true;
-    return;
-  }
-  banner.hidden = false;
-  banner.textContent =
-    "Auto-update is not available yet — install new releases manually from GitHub.";
-}
+async function wireDownloadButtons() {
+  const platform = detectPlatform();
+  const buttons = [...document.querySelectorAll("[data-download]")];
+  const versionEls = document.querySelectorAll("[data-version]");
+  const statusEls = document.querySelectorAll("[data-download-status]");
 
-function applyStepStatuses(steps) {
-  const byId = new Map(steps.map((s) => [String(s.id), s.status]));
-  let done = 0;
-  document.querySelectorAll("[data-step]").forEach((el) => {
-    const id = el.getAttribute("data-step");
-    const status = byId.get(id) || "not_started";
-    if (status === "done") done += 1;
-    el.dataset.status = status;
-    const badge = el.querySelector("[data-status-badge]");
-    if (badge) badge.textContent = STATUS_LABELS[status] || status;
+  const setStatus = (text) => {
+    statusEls.forEach((el) => {
+      el.textContent = text;
+    });
+  };
+
+  buttons.forEach((btn) => {
+    btn.setAttribute("href", releasesPageUrl());
+    btn.setAttribute("aria-busy", "true");
   });
-  const progress = document.querySelector("[data-phase7-progress]");
-  if (progress) {
-    const total = document.querySelectorAll("[data-step]").length || 8;
-    progress.textContent = `${done} / ${total} steps done`;
-  }
-}
+  setStatus("Checking latest release…");
 
-async function loadPhase7Status() {
-  if (!document.querySelector("[data-step]")) {
-    setBanner(false);
-    return;
-  }
   try {
-    const res = await fetch(CONFIG.statusUrl, { cache: "no-store" });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    setBanner(Boolean(data.autoUpdateLive));
-    if (Array.isArray(data.steps)) applyStepStatuses(data.steps);
+    const release = await fetchLatestRelease();
+    const tag = release.tag_name || release.name || "";
+    const asset = pickAsset(release.assets, platform);
+    const size = asset ? formatMb(asset.size) : null;
+
+    versionEls.forEach((el) => {
+      if (tag) el.textContent = tag;
+    });
+
+    if (asset?.browser_download_url) {
+      const label =
+        platform === "win"
+          ? `Download for Windows${tag ? ` · ${tag}` : ""}`
+          : platform === "mac"
+            ? `Download for Mac${tag ? ` · ${tag}` : ""}`
+            : `Download${tag ? ` · ${tag}` : ""}`;
+
+      buttons.forEach((btn) => {
+        btn.href = asset.browser_download_url;
+        if (btn.dataset.downloadLabel !== "keep") {
+          btn.textContent = label;
+        }
+      });
+      setStatus(
+        [asset.name, size].filter(Boolean).join(" · ") +
+          (platform === "other"
+            ? " · Windows build linked — see all platforms on GitHub"
+            : ""),
+      );
+    } else {
+      buttons.forEach((btn) => {
+        btn.href = release.html_url || releasesPageUrl();
+        if (btn.dataset.downloadLabel !== "keep") {
+          btn.textContent = "View releases";
+        }
+      });
+      setStatus(
+        platform === "mac"
+          ? "No Mac build matched — open Releases for available assets."
+          : "Installer not in latest release — open Releases.",
+      );
+    }
   } catch {
-    setBanner(false);
+    buttons.forEach((btn) => {
+      btn.href = releasesPageUrl();
+      if (btn.dataset.downloadLabel !== "keep") {
+        btn.textContent = "Download from GitHub";
+      }
+    });
+    setStatus("Couldn’t reach GitHub — opening Releases instead.");
+  } finally {
+    buttons.forEach((btn) => btn.removeAttribute("aria-busy"));
   }
 }
 
@@ -80,6 +191,30 @@ function markCurrentNav() {
   });
 }
 
-wireDownloadLinks();
+function initReveal() {
+  const nodes = document.querySelectorAll("[data-reveal]");
+  if (
+    !nodes.length ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    nodes.forEach((n) => n.classList.add("is-in"));
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-in");
+          io.unobserve(entry.target);
+        }
+      }
+    },
+    { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
+  );
+  nodes.forEach((n) => io.observe(n));
+}
+
+wireStaticLinks();
 markCurrentNav();
-void loadPhase7Status();
+initReveal();
+void wireDownloadButtons();

@@ -8,81 +8,219 @@
       name="description"
       content="WATabs keeps multiple WhatsApp Web accounts in one local desktop window. Official WhatsApp Web only — no scraping, no bots."
     />
+    <meta property="og:title" content="WATabs" />
+    <meta
+      property="og:description"
+      content="Many accounts. One local window. Isolated WhatsApp Web sessions on your machine."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://watabs.vercel.app/" />
+    <link rel="canonical" href="https://watabs.vercel.app/" />
     <link rel="icon" href="./assets/icon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="banner" data-update-banner role="status"></div>
-    <header class="site-header">
+    <div class="banner" data-update-banner hidden role="status">
+      <div class="wrap">
+        Auto-update is not live yet — install new versions from the download
+        button or GitHub Releases.
+      </div>
+    </div>
+    <header class="site-header" data-header>
       <div class="wrap nav">
-        <a class="nav-brand" href="./index.html" data-nav="index">
-          <img src="./assets/watabs-logo.png" alt="" width="32" height="32" />
+        <a class="nav-brand" href="./" data-nav="index">
+          <img src="./assets/watabs-icon.svg" alt="" width="32" height="32" />
           <span>WATabs</span>
         </a>
         <ul class="nav-links">
-          <li><a href="./phase7.html" data-nav="phase7">Phase 7</a></li>
+          <li><a href="./#features">Features</a></li>
           <li><a href="./updates.html" data-nav="updates">Updates</a></li>
           <li><a href="./privacy.html" data-nav="privacy">Privacy</a></li>
-          <li><a href="#" data-repo>GitHub</a></li>
+          <li><a href="https://github.com/harshkolte01/WATabs" data-repo>GitHub</a></li>
+          <li>
+            <a
+              class="btn btn-primary btn-sm nav-cta"
+              href="https://github.com/harshkolte01/WATabs/releases/latest"
+              data-download
+              data-download-label="keep"
+              >Download</a
+            >
+          </li>
         </ul>
       </div>
     </header>
 
     <main>
       <section class="hero">
+        <div class="hero-plane" aria-hidden="true"></div>
         <div class="wrap">
-          <div class="hero-brand" aria-label="WATabs">
-            <img
-              class="mark"
-              src="./assets/watabs-logo.png"
-              alt=""
-              width="72"
-              height="72"
-            />
-            <img
-              class="word"
-              src="./assets/watabs-text.png"
-              alt="WATabs"
-              width="220"
-              height="48"
-            />
+          <div class="hero-inner">
+            <div class="hero-brand" aria-label="WATabs">
+              <img
+                class="mark"
+                src="./assets/watabs-icon.svg"
+                alt=""
+                width="72"
+                height="72"
+              />
+              <img
+                class="word"
+                src="./assets/watabs-wordmark-dark.svg"
+                alt="WATabs"
+                width="220"
+                height="48"
+              />
+            </div>
+            <h1>Many accounts. One local window.</h1>
+            <p class="lede">
+              Isolated WhatsApp Web sessions on your machine — the shell stays
+              local; messaging stays on the official site.
+            </p>
+            <div class="cta-row">
+              <a
+                class="btn btn-primary"
+                href="https://github.com/harshkolte01/WATabs/releases/latest"
+                data-download
+                >Download latest</a
+              >
+              <a class="btn btn-ghost" href="./#features">See what ships</a>
+            </div>
+            <p class="download-meta">
+              <span data-version>—</span>
+              <span aria-hidden="true"> · </span>
+              <span data-download-status>Preparing download…</span>
+            </p>
           </div>
-          <h1>Many accounts. One local window.</h1>
-          <p class="lede">
-            Isolated WhatsApp Web sessions on your machine — the shell stays
-            local; messaging stays on the official site.
+        </div>
+      </section>
+
+      <section class="preview-band" data-reveal>
+        <div class="wrap">
+          <div
+            class="preview-frame"
+            role="img"
+            aria-label="WATabs product preview — multi-account sidebar with WhatsApp Web workspace"
+          >
+            <div class="mock-app">
+              <div class="mock-titlebar">
+                <i class="mock-dot" aria-hidden="true"></i>
+                <i class="mock-dot" aria-hidden="true"></i>
+                <i class="mock-dot" aria-hidden="true"></i>
+                <span>WATabs</span>
+              </div>
+              <div class="mock-body">
+                <aside class="mock-side">
+                  <div class="label">ACCOUNTS</div>
+                  <div class="mock-account">
+                    <i class="mock-swatch" style="background: #14966a" aria-hidden="true"></i>
+                    <div>
+                      <strong>Personal</strong>
+                      <small>Isolated session</small>
+                    </div>
+                  </div>
+                  <div class="mock-account is-active">
+                    <i class="mock-swatch" style="background: #0f766e" aria-hidden="true"></i>
+                    <div>
+                      <strong>Business</strong>
+                      <small>Active</small>
+                    </div>
+                  </div>
+                  <div class="mock-account">
+                    <i class="mock-swatch" style="background: #2f6bff" aria-hidden="true"></i>
+                    <div>
+                      <strong>Support</strong>
+                      <small>Isolated session</small>
+                    </div>
+                  </div>
+                </aside>
+                <div class="mock-main">
+                  <h3>Official WhatsApp Web</h3>
+                  <p>
+                    Loads here in an isolated session — no injection, no
+                    scraping.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="wrap">
+          <h2 data-reveal>Built as a container, not a client</h2>
+          <p class="support" data-reveal="2">
+            WATabs never scrapes chats or injects into WhatsApp. Each account is
+            a separate persistent browser partition.
           </p>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="#" data-download
-              >Download latest</a
-            >
-            <a class="btn btn-ghost" href="./phase7.html"
-              >Packaging &amp; update plan</a
-            >
+          <div class="feature-rail">
+            <article data-reveal>
+              <div class="idx">01</div>
+              <div>
+                <h3>Isolated sessions</h3>
+                <p>
+                  Separate Electron partitions per account. Stay logged in after
+                  restart — switch instantly without sharing cookies.
+                </p>
+              </div>
+            </article>
+            <article data-reveal="2">
+              <div class="idx">02</div>
+              <div>
+                <h3>Downloads &amp; media controls</h3>
+                <p>
+                  Save files safely, warn on executables, and manage mic/camera
+                  permissions per account — not globally scraped.
+                </p>
+              </div>
+            </article>
+            <article data-reveal="3">
+              <div class="idx">03</div>
+              <div>
+                <h3>Lock, tray, local-only</h3>
+                <p>
+                  Optional PIN lock, tray mode, and redacted diagnostics. No
+                  cloud sync of sessions. No bots. No automation.
+                </p>
+              </div>
+            </article>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <div class="wrap">
-          <h2>What ships today</h2>
+        <div class="wrap" data-reveal>
+          <h2>Get the latest build</h2>
           <p class="support">
-            A desktop container for multiple persistent WhatsApp Web profiles —
-            not a custom chat client.
+            Download resolves automatically from
+            <a href="https://github.com/harshkolte01/WATabs/releases/latest" data-releases
+              >GitHub Releases</a
+            >
+            — Windows Setup preferred; Mac ZIP when available.
           </p>
-          <div class="prose">
-            <ul>
-              <li>Separate partitions per account; sessions stay on disk locally</li>
-              <li>Downloads, media permissions, tray, and optional app lock</li>
-              <li>No WhatsApp DOM injection, scraping, or message automation</li>
-            </ul>
+          <div class="cta-row">
+            <a
+              class="btn btn-primary"
+              href="https://github.com/harshkolte01/WATabs/releases/latest"
+              data-download
+              >Download latest</a
+            >
+            <a
+              class="btn btn-ghost"
+              href="https://github.com/harshkolte01/WATabs/releases/latest"
+              data-releases
+              >All platforms</a
+            >
           </div>
+          <p class="download-meta">
+            <span data-download-status>Checking latest release…</span>
+          </p>
         </div>
       </section>
     </main>
@@ -99,6 +237,17 @@
         </p>
       </div>
     </footer>
+    <script>
+      (() => {
+        const header = document.querySelector("[data-header]");
+        if (!header) return;
+        const onScroll = () => {
+          header.classList.toggle("is-scrolled", window.scrollY > 8);
+        };
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+      })();
+    </script>
     <script src="./app.js" defer></script>
   </body>
 </html>

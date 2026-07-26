@@ -14,7 +14,7 @@ describe("account IPC sender wall", () => {
   it("allows trusted shell", () => {
     expect(() =>
       assertTrustedShellSender({
-        senderFrame: { url: "app://shell/index.html" },
+        senderFrame: { url: "watabs://shell/index.html" },
       } as never),
     ).not.toThrow();
   });
