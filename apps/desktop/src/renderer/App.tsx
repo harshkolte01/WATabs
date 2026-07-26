@@ -1406,7 +1406,7 @@ export function App() {
             <p className="hint">
               Release notes / manual download:{" "}
               {updateStatus?.releaseNotesUrl ??
-                "https://github.com/harshkolte01/WATabls/releases/latest"}
+                "https://github.com/harshkolte01/WATabs/releases/latest"}
             </p>
             <div className="nav-label">Diagnostics</div>
             <button

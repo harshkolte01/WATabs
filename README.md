@@ -45,7 +45,7 @@ Static HTML in [`site/`](site/). Deploy with Vercel **Root Directory** = `site`,
 Desktop updater (`electron-updater`) is wired for **packaged** builds only. `pnpm start` reports updates as unavailable.
 
 - Channels: Settings → Updates (`stable` / `beta`)
-- Feed: GitHub Releases (`harshkolte01/WATabls`)
+- Feed: GitHub Releases (`harshkolte01/WATabs`)
 - Release CI: [`.github/workflows/release.yml`](.github/workflows/release.yml) on `v*` tags
 - Secrets: [`docs/phase7-secrets.md`](docs/phase7-secrets.md)
 - Smoke: [`docs/PHASE7_MANUAL_SMOKE.md`](docs/PHASE7_MANUAL_SMOKE.md)

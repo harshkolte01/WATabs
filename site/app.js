@@ -2,8 +2,8 @@
  * WATabs site config — change RELEASES_URL when the GitHub repo moves.
  */
 const CONFIG = {
-  releasesUrl: "https://github.com/harshkolte01/WATabls/releases/latest",
-  repoUrl: "https://github.com/harshkolte01/WATabls",
+  releasesUrl: "https://github.com/harshkolte01/WATabs/releases/latest",
+  repoUrl: "https://github.com/harshkolte01/WATabs",
   statusUrl: "./phase7-status.json",
 };
 

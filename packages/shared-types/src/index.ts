@@ -237,7 +237,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 /** Keep in sync with site/app.js and forge/GitHub Releases. */
 export const UPDATE_GITHUB_OWNER = "harshkolte01";
-export const UPDATE_GITHUB_REPO = "WATabls";
+export const UPDATE_GITHUB_REPO = "WATabs";
 
 export function githubReleasesLatestUrl(): string {
   return `https://github.com/${UPDATE_GITHUB_OWNER}/${UPDATE_GITHUB_REPO}/releases/latest`;
