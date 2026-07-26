@@ -70,11 +70,14 @@ export function createAccountWebContentsView(
     });
   }
 
-  view.webContents.on("did-fail-load", (_e, code, desc) => {
+  view.webContents.on("did-fail-load", (_e, code, desc, _url, isMainFrame) => {
     log("warn", "account_did_fail_load", {
       accountId: id,
       code,
       desc,
+    });
+    void import("../lifecycle/crash-recovery").then(({ handleDidFailLoad }) => {
+      handleDidFailLoad(id, isMainFrame, code);
     });
   });
 

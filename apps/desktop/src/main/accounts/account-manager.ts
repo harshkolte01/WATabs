@@ -87,6 +87,10 @@ export async function createAccount(
 }
 
 export async function selectAccount(accountId: string): Promise<AccountRecord> {
+  const { isAppLocked } = await import("../system/app-lock-manager");
+  if (isAppLocked()) {
+    throw new Error("App is locked");
+  }
   const account = getAccount(accountId);
   if (!account) {
     throw new Error("Unknown account");

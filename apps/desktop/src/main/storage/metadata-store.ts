@@ -48,7 +48,7 @@ export function loadMetadata(): AppMetadata {
     const migrated = migrateMetadata(raw);
     const parsed = appMetadataSchema.parse(migrated);
     cached = parsed;
-    copyLastKnownGood(userDataDir());
+    // Do not refresh backup on every successful load — only before writes.
     return cached;
   } catch (error) {
     log("warn", "metadata_primary_load_failed", {
@@ -79,8 +79,21 @@ export function loadMetadata(): AppMetadata {
 
 export function persistMetadata(metadata: AppMetadata): void {
   const parsed = appMetadataSchema.parse(metadata);
-  writeAtomicJson(metadataPath(userDataDir()), parsed);
-  copyLastKnownGood(userDataDir());
+  const dir = userDataDir();
+  const primary = metadataPath(dir);
+  // Preserve previous primary as last-known-good before overwrite.
+  if (fs.existsSync(primary)) {
+    try {
+      const raw = readRawFile(primary);
+      if (raw != null) {
+        appMetadataSchema.parse(migrateMetadata(raw));
+        copyLastKnownGood(dir);
+      }
+    } catch {
+      // Keep existing backup untouched if current primary is already bad.
+    }
+  }
+  writeAtomicJson(primary, parsed);
   cached = parsed;
 }
 

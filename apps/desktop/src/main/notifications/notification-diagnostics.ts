@@ -6,6 +6,7 @@ import {
   getSettings,
 } from "../storage/metadata-store";
 import { hasAccountView } from "../accounts/account-view-manager";
+import { shouldSuppressNotificationContent } from "../system/app-lock-manager";
 import { isRunningInTray } from "../system/tray-manager";
 
 let lastTestAt: string | null = null;
@@ -48,9 +49,12 @@ export function sendShellTestNotification(): {
     return { ok: false, at };
   }
 
+  const locked = shouldSuppressNotificationContent();
   const notification = new Notification({
-    title: "WATabs test",
-    body: "This is an application test notification, not a WhatsApp message.",
+    title: locked ? "WATabs" : "WATabs test",
+    body: locked
+      ? "New activity"
+      : "This is an application test notification, not a WhatsApp message.",
     silent: false,
   });
   notification.show();

@@ -7,8 +7,11 @@ import type {
   AppSettings,
   CreateAccountInput,
   DownloadRecord,
+  LockStatus,
   NotificationDiagnostics,
   PermissionPreference,
+  RecoveryAccountState,
+  SystemStatus,
   WindowState,
 } from "@multi-whatsapp/shared-types";
 
@@ -173,6 +176,75 @@ const downloadsApi = {
   },
 };
 
+const lockApi = {
+  getStatus: (): Promise<LockStatus> =>
+    ipcRenderer.invoke(ipcChannels.lockGetStatus),
+  enable: (input: {
+    pin: string;
+    confirmPin: string;
+    autoLockMinutes?: 5 | 15 | 30 | 60 | null;
+    lockOnOsLock?: boolean;
+    requirePinAfterRestart?: boolean;
+    hideAccountLabelsWhenLocked?: boolean;
+  }): Promise<LockStatus> =>
+    ipcRenderer.invoke(ipcChannels.lockEnable, input),
+  configure: (patch: {
+    autoLockMinutes?: 5 | 15 | 30 | 60 | null;
+    lockOnOsLock?: boolean;
+    requirePinAfterRestart?: boolean;
+    hideAccountLabelsWhenLocked?: boolean;
+  }): Promise<LockStatus> =>
+    ipcRenderer.invoke(ipcChannels.lockConfigure, patch),
+  lock: (): Promise<LockStatus> => ipcRenderer.invoke(ipcChannels.lockLock),
+  unlock: (pin: string): Promise<LockStatus> =>
+    ipcRenderer.invoke(ipcChannels.lockUnlock, { pin }),
+  reset: (): Promise<LockStatus> => ipcRenderer.invoke(ipcChannels.lockReset),
+  onChanged: (callback: (status: LockStatus) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, status: LockStatus) => {
+      callback(status);
+    };
+    ipcRenderer.on(ipcChannels.lockChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.lockChanged, listener);
+    };
+  },
+};
+
+const recoveryApi = {
+  list: (): Promise<RecoveryAccountState[]> =>
+    ipcRenderer.invoke(ipcChannels.recoveryList),
+  retry: (accountId: string): Promise<RecoveryAccountState> =>
+    ipcRenderer.invoke(ipcChannels.recoveryRetry, accountId),
+  reload: (accountId: string): Promise<RecoveryAccountState> =>
+    ipcRenderer.invoke(ipcChannels.recoveryReload, accountId),
+  onChanged: (
+    callback: (states: RecoveryAccountState[]) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      states: RecoveryAccountState[],
+    ) => {
+      callback(states);
+    };
+    ipcRenderer.on(ipcChannels.recoveryChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.recoveryChanged, listener);
+    };
+  },
+};
+
+const diagnosticsApi = {
+  getSystemStatus: (): Promise<SystemStatus> =>
+    ipcRenderer.invoke(ipcChannels.diagnosticsGetSystemStatus),
+  previewSupportBundle: (): Promise<{
+    files: { name: string; description: string; bytes: number }[];
+    excludes: string[];
+    generatedAt: string;
+  }> => ipcRenderer.invoke(ipcChannels.diagnosticsPreviewSupportBundle),
+  createSupportBundle: (): Promise<{ path: string | null }> =>
+    ipcRenderer.invoke(ipcChannels.diagnosticsCreateSupportBundle),
+};
+
 const desktop = {
   getAppInfo: (): Promise<AppInfo> =>
     ipcRenderer.invoke(ipcChannels.getAppInfo),
@@ -188,6 +260,9 @@ const desktop = {
   permissions: permissionsApi,
   notifications: notificationsApi,
   downloads: downloadsApi,
+  lock: lockApi,
+  recovery: recoveryApi,
+  diagnostics: diagnosticsApi,
   onClosePrompt: (
     callback: (payload: ClosePromptPayload) => void,
   ): (() => void) => {

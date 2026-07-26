@@ -1,19 +1,41 @@
-import { app, ipcMain } from "electron";
+import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { AppInfo } from "@multi-whatsapp/shared-types";
 import {
   accountIdSchema,
   closeToTrayChoiceSchema,
+  configureLockInputSchema,
   createAccountInputSchema,
   downloadIdSchema,
+  enableLockInputSchema,
   ipcChannels,
   permissionPromptResponseSchema,
   renameAccountInputSchema,
   reorderAccountsInputSchema,
   setAudioMutedInputSchema,
   setEnabledInputSchema,
+  unlockInputSchema,
   updateAccountPermissionsSchema,
   updateSettingsSchema,
 } from "@multi-whatsapp/validation";
+import {
+  createSupportBundle,
+  previewSupportBundle,
+} from "../diagnostics/support-bundle";
+import { getSystemStatus } from "../diagnostics/system-status";
+import {
+  listRecoveryStates,
+  reloadAccountRecovery,
+  retryAccountRecovery,
+} from "../lifecycle/crash-recovery";
+import {
+  configureAppLock,
+  enableAppLock,
+  getLockStatus,
+  lockApp,
+  noteUserActivity,
+  resetAppLock,
+  unlockApp,
+} from "../system/app-lock-manager";
 import {
   cancelDownload,
   chooseDownloadDirectory,
@@ -55,9 +77,14 @@ import {
 import { respondClosePrompt } from "../windows/close-prompt";
 import { assertTrustedShellSender } from "./sender-validation";
 
+function shellActivity(event: IpcMainInvokeEvent): void {
+  assertTrustedShellSender(event);
+  noteUserActivity();
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle(ipcChannels.getAppInfo, (event) => {
-    assertTrustedShellSender(event);
+    shellActivity(event);
     const info: AppInfo = {
       name: app.getName(),
       version: app.getVersion(),
@@ -95,7 +122,16 @@ export function registerIpcHandlers(): void {
       });
       throw new Error("Invalid settings payload");
     }
-    return updateSettings(parsed.data);
+    // Lock enable/disable must go through desktop.lock.* (PIN required).
+    const {
+      appLockEnabled: _a,
+      autoLockMinutes: _b,
+      lockOnOsLock: _c,
+      requirePinAfterRestart: _d,
+      hideAccountLabelsWhenLocked: _e,
+      ...safePatch
+    } = parsed.data;
+    return updateSettings(safePatch);
   });
 
   ipcMain.handle(ipcChannels.accountsList, (event) => {
@@ -303,6 +339,90 @@ export function registerIpcHandlers(): void {
       updateSettings({ downloadDirectory: dir });
     }
     return { path: dir };
+  });
+
+  ipcMain.handle(ipcChannels.lockGetStatus, (event) => {
+    shellActivity(event);
+    return getLockStatus();
+  });
+
+  ipcMain.handle(ipcChannels.lockEnable, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = enableLockInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid enable-lock payload");
+    }
+    const status = await enableAppLock(parsed.data);
+    void import("../system/tray-manager").then(({ rebuildTrayMenu }) => {
+      rebuildTrayMenu();
+    });
+    return status;
+  });
+
+  ipcMain.handle(ipcChannels.lockConfigure, (event, payload: unknown) => {
+    shellActivity(event);
+    const parsed = configureLockInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid configure-lock payload");
+    }
+    return configureAppLock(parsed.data);
+  });
+
+  ipcMain.handle(ipcChannels.lockLock, (event) => {
+    assertTrustedShellSender(event);
+    lockApp("shell");
+    return getLockStatus();
+  });
+
+  ipcMain.handle(ipcChannels.lockUnlock, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = unlockInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid unlock payload");
+    }
+    // Never log PIN.
+    return unlockApp(parsed.data.pin);
+  });
+
+  ipcMain.handle(ipcChannels.lockReset, (event) => {
+    assertTrustedShellSender(event);
+    const status = resetAppLock();
+    void import("../system/tray-manager").then(({ rebuildTrayMenu }) => {
+      rebuildTrayMenu();
+    });
+    return status;
+  });
+
+  ipcMain.handle(ipcChannels.recoveryList, (event) => {
+    shellActivity(event);
+    return listRecoveryStates();
+  });
+
+  ipcMain.handle(ipcChannels.recoveryRetry, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    return retryAccountRecovery(accountId);
+  });
+
+  ipcMain.handle(ipcChannels.recoveryReload, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    return reloadAccountRecovery(accountId);
+  });
+
+  ipcMain.handle(ipcChannels.diagnosticsGetSystemStatus, (event) => {
+    shellActivity(event);
+    return getSystemStatus();
+  });
+
+  ipcMain.handle(ipcChannels.diagnosticsPreviewSupportBundle, (event) => {
+    assertTrustedShellSender(event);
+    return previewSupportBundle();
+  });
+
+  ipcMain.handle(ipcChannels.diagnosticsCreateSupportBundle, async (event) => {
+    assertTrustedShellSender(event);
+    return createSupportBundle();
   });
 
   void getBadgeSnapshot;

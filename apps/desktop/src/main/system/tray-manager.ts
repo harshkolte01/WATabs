@@ -91,7 +91,13 @@ export function rebuildTrayMenu(): void {
     },
     {
       label: "Lock",
-      enabled: false,
+      enabled: getSettings().appLockEnabled,
+      click: () => {
+        void import("./app-lock-manager").then(({ lockApp }) => {
+          lockApp("tray");
+          showMainWindow();
+        });
+      },
     },
     {
       label: "Check for updates",

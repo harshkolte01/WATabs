@@ -4,8 +4,11 @@ import type {
   AccountRecord,
   AppInfo,
   AppSettings,
+  LockStatus,
   NotificationDiagnostics,
   PermissionPreference,
+  RecoveryAccountState,
+  SystemStatus,
 } from "@multi-whatsapp/shared-types";
 import type {
   ClosePromptPayload,
@@ -18,12 +21,21 @@ type Tab = "accounts" | "downloads" | "permissions" | "settings";
 
 type ConfirmAction =
   | { kind: "clearSession"; accountId: string; label: string }
-  | { kind: "remove"; accountId: string; label: string };
+  | { kind: "remove"; accountId: string; label: string }
+  | { kind: "resetLock" };
 
 const PREF_OPTIONS: { value: PermissionPreference; label: string }[] = [
   { value: "ask", label: "Ask each time" },
   { value: "allow", label: "Allow" },
   { value: "block", label: "Block" },
+];
+
+const AUTO_LOCK_OPTIONS: Array<5 | 15 | 30 | 60 | null> = [
+  null,
+  5,
+  15,
+  30,
+  60,
 ];
 
 export function App() {
@@ -50,6 +62,17 @@ export function App() {
   const [diagnostics, setDiagnostics] =
     useState<NotificationDiagnostics | null>(null);
   const [downloads, setDownloads] = useState<DownloadUiRecord[]>([]);
+  const [lockStatus, setLockStatus] = useState<LockStatus | null>(null);
+  const [unlockPin, setUnlockPin] = useState("");
+  const [enablePin, setEnablePin] = useState("");
+  const [enablePinConfirm, setEnablePinConfirm] = useState("");
+  const [recovery, setRecovery] = useState<RecoveryAccountState[]>([]);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [bundlePreview, setBundlePreview] = useState<{
+    files: { name: string; description: string; bytes: number }[];
+    excludes: string[];
+    generatedAt: string;
+  } | null>(null);
 
   const refreshAccounts = useCallback(async () => {
     const result = await window.desktop.accounts.list();
@@ -96,6 +119,24 @@ export function App() {
         unsubs.push(
           window.desktop.downloads.onChanged((items) => {
             setDownloads(items);
+          }),
+        );
+        const [lock, recoveryList] = await Promise.all([
+          window.desktop.lock.getStatus(),
+          window.desktop.recovery.list(),
+        ]);
+        if (!cancelled) {
+          setLockStatus(lock);
+          setRecovery(recoveryList);
+        }
+        unsubs.push(
+          window.desktop.lock.onChanged((status) => {
+            setLockStatus(status);
+          }),
+        );
+        unsubs.push(
+          window.desktop.recovery.onChanged((states) => {
+            setRecovery(states);
           }),
         );
       } catch (err) {
@@ -175,6 +216,14 @@ export function App() {
     if (!confirm) return;
     const action = confirm;
     setConfirm(null);
+    if (action.kind === "resetLock") {
+      await run(async () => {
+        const status = await window.desktop.lock.reset();
+        setLockStatus(status);
+        setSettings(await window.desktop.getSettings());
+      });
+      return;
+    }
     if (action.kind === "clearSession") {
       await run(() => window.desktop.accounts.clearSession(action.accountId));
       return;
@@ -196,6 +245,20 @@ export function App() {
 
   function badgeFor(accountId: string): AccountBadgeState | undefined {
     return badges.find((b) => b.accountId === accountId);
+  }
+
+  function recoveryFor(accountId: string): RecoveryAccountState | undefined {
+    return recovery.find((r) => r.accountId === accountId);
+  }
+
+  function accountDisplayLabel(account: AccountRecord): string {
+    if (
+      lockStatus?.locked &&
+      lockStatus.hideAccountLabelsWhenLocked
+    ) {
+      return "Account";
+    }
+    return account.label;
   }
 
   async function onPermissionPatch(
@@ -220,8 +283,52 @@ export function App() {
     await window.desktop.permissions.respondPrompt(requestId, decision);
   }
 
+  const locked = Boolean(lockStatus?.locked);
+
   return (
     <div className="app">
+      {locked ? (
+        <div className="lock-overlay" role="dialog" aria-modal="true">
+          <div className="lock-card">
+            <img className="lock-mark" src={brandMark} alt="" />
+            <h1>WATabs is locked</h1>
+            <p className="hint">
+              Enter your PIN to show account views. This is casual protection,
+              not disk encryption.
+            </p>
+            <form
+              className="inline-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(async () => {
+                  const status = await window.desktop.lock.unlock(unlockPin);
+                  setLockStatus(status);
+                  setUnlockPin("");
+                });
+              }}
+            >
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={8}
+                placeholder="PIN"
+                value={unlockPin}
+                onChange={(e) => setUnlockPin(e.target.value.replace(/\D/g, ""))}
+                autoFocus
+              />
+              <button type="submit" disabled={busy || unlockPin.length < 4}>
+                Unlock
+              </button>
+            </form>
+            {lockStatus && lockStatus.unlockDelayMs > 0 ? (
+              <p className="hint">
+                Wait {Math.ceil(lockStatus.unlockDelayMs / 1000)}s before retrying.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <aside className="sidebar">
         <div className="brand" aria-label="WATabs">
           <img className="brand-mark" src={brandMark} alt="" />
@@ -355,7 +462,9 @@ export function App() {
             <p>
               {confirm.kind === "clearSession"
                 ? `Clear the local session for “${confirm.label}”? You will need to scan the QR code again. This does not delete your WhatsApp account.`
-                : `Remove “${confirm.label}”? Other accounts are not affected. This does not delete your WhatsApp account on your phone.`}
+                : confirm.kind === "resetLock"
+                  ? "Reset app lock? This clears the PIN verifier and disables lock. WhatsApp sessions stay on disk."
+                  : `Remove “${confirm.label}”? Other accounts are not affected. This does not delete your WhatsApp account on your phone.`}
             </p>
             <div className="inline-form">
               <button
@@ -363,7 +472,11 @@ export function App() {
                 disabled={busy}
                 onClick={() => void onConfirmAction()}
               >
-                {confirm.kind === "clearSession" ? "Clear session" : "Remove"}
+                {confirm.kind === "clearSession"
+                  ? "Clear session"
+                  : confirm.kind === "resetLock"
+                    ? "Reset lock"
+                    : "Remove"}
               </button>
               <button type="button" onClick={() => setConfirm(null)}>
                 Cancel
@@ -386,17 +499,25 @@ export function App() {
                 <button
                   type="button"
                   className="account-select"
-                  disabled={busy || !account.enabled}
+                  disabled={busy || !account.enabled || Boolean(lockStatus?.locked)}
                   onClick={() => void onSelect(account.id)}
                 >
-                  <span className="account-label">{account.label}</span>
-                  {badgeFor(account.id)?.attention ? (
+                  <span className="account-label">
+                    {accountDisplayLabel(account)}
+                  </span>
+                  {badgeFor(account.id)?.attention && !lockStatus?.locked ? (
                     <span className="pill badge-pill">
                       {badgeFor(account.id)?.count ?? "•"}
                     </span>
                   ) : null}
                   {!account.enabled ? (
                     <span className="pill">Disabled</span>
+                  ) : null}
+                  {recoveryFor(account.id)?.status &&
+                  recoveryFor(account.id)!.status !== "ok" ? (
+                    <span className="pill warn-pill">
+                      {recoveryFor(account.id)!.status.replace(/_/g, " ")}
+                    </span>
                   ) : null}
                 </button>
                 {renameId === account.id ? (
@@ -454,11 +575,27 @@ export function App() {
                       </button>
                       <button
                         type="button"
-                        disabled={busy || !account.enabled}
+                        disabled={busy || !account.enabled || Boolean(lockStatus?.locked)}
                         onClick={() => void onReload(account.id)}
                       >
                         Reload
                       </button>
+                      {recoveryFor(account.id)?.status ===
+                        "needs_manual_recovery" ||
+                      recoveryFor(account.id)?.status === "crashed" ||
+                      recoveryFor(account.id)?.status === "load_failed" ? (
+                        <button
+                          type="button"
+                          disabled={busy || Boolean(lockStatus?.locked)}
+                          onClick={() =>
+                            void run(() =>
+                              window.desktop.recovery.retry(account.id),
+                            )
+                          }
+                        >
+                          Retry recovery
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         disabled={busy}
@@ -950,6 +1087,249 @@ export function App() {
                 Reset
               </button>
             </div>
+            <div className="nav-label">Privacy &amp; lock</div>
+            <p className="hint">
+              App lock hides account views behind a PIN. It is casual protection
+              only — not disk or session encryption. Prefer OS screen lock and
+              BitLocker/FileVault for real protection.
+            </p>
+            {!lockStatus?.enabled ? (
+              <div className="form-stack">
+                <label className="field">
+                  <span className="field-label">New PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    maxLength={8}
+                    value={enablePin}
+                    onChange={(e) =>
+                      setEnablePin(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="4–8 digits"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Confirm PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    maxLength={8}
+                    value={enablePinConfirm}
+                    onChange={(e) =>
+                      setEnablePinConfirm(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="Confirm"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-block"
+                  disabled={
+                    busy ||
+                    enablePin.length < 4 ||
+                    enablePin !== enablePinConfirm ||
+                    !lockStatus?.encryptionAvailable
+                  }
+                  onClick={() =>
+                    void run(async () => {
+                      const status = await window.desktop.lock.enable({
+                        pin: enablePin,
+                        confirmPin: enablePinConfirm,
+                        autoLockMinutes: 15,
+                      });
+                      setLockStatus(status);
+                      setEnablePin("");
+                      setEnablePinConfirm("");
+                      setSettings(await window.desktop.getSettings());
+                    })
+                  }
+                >
+                  Enable app lock
+                </button>
+                {lockStatus && !lockStatus.encryptionAvailable ? (
+                  <p className="hint">
+                    OS secure storage is unavailable; lock cannot be enabled.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <div className="row">
+                  <span>App lock</span>
+                  <button
+                    type="button"
+                    disabled={busy || locked}
+                    onClick={() =>
+                      void run(async () => {
+                        setLockStatus(await window.desktop.lock.lock());
+                      })
+                    }
+                  >
+                    Lock now
+                  </button>
+                </div>
+                <div className="row">
+                  <span>Auto-lock</span>
+                  <select
+                    value={String(lockStatus.autoLockMinutes)}
+                    disabled={busy}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const minutes =
+                        raw === "null"
+                          ? null
+                          : (Number(raw) as 5 | 15 | 30 | 60);
+                      void run(async () => {
+                        setLockStatus(
+                          await window.desktop.lock.configure({
+                            autoLockMinutes: minutes,
+                          }),
+                        );
+                        setSettings(await window.desktop.getSettings());
+                      });
+                    }}
+                  >
+                    {AUTO_LOCK_OPTIONS.map((opt) => (
+                      <option key={String(opt)} value={String(opt)}>
+                        {opt == null ? "Off" : `${opt} min`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="row">
+                  <span>Lock with OS</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void run(async () => {
+                        setLockStatus(
+                          await window.desktop.lock.configure({
+                            lockOnOsLock: !lockStatus.lockOnOsLock,
+                          }),
+                        );
+                        setSettings(await window.desktop.getSettings());
+                      })
+                    }
+                  >
+                    {lockStatus.lockOnOsLock ? "On" : "Off"}
+                  </button>
+                </div>
+                <div className="row">
+                  <span>PIN after restart</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void run(async () => {
+                        setLockStatus(
+                          await window.desktop.lock.configure({
+                            requirePinAfterRestart:
+                              !lockStatus.requirePinAfterRestart,
+                          }),
+                        );
+                        setSettings(await window.desktop.getSettings());
+                      })
+                    }
+                  >
+                    {lockStatus.requirePinAfterRestart ? "On" : "Off"}
+                  </button>
+                </div>
+                <div className="row">
+                  <span>Hide labels when locked</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void run(async () => {
+                        setLockStatus(
+                          await window.desktop.lock.configure({
+                            hideAccountLabelsWhenLocked:
+                              !lockStatus.hideAccountLabelsWhenLocked,
+                          }),
+                        );
+                        setSettings(await window.desktop.getSettings());
+                      })
+                    }
+                  >
+                    {lockStatus.hideAccountLabelsWhenLocked ? "On" : "Off"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setConfirm({ kind: "resetLock" })}
+                >
+                  Reset app lock
+                </button>
+                <p className="hint">
+                  Reset clears the PIN verifier and disables lock. WhatsApp
+                  sessions are not deleted.
+                </p>
+              </>
+            )}
+            <div className="nav-label">Diagnostics</div>
+            <button
+              type="button"
+              onClick={() =>
+                void window.desktop.diagnostics
+                  .getSystemStatus()
+                  .then(setSystemStatus)
+              }
+            >
+              Refresh system status
+            </button>
+            {systemStatus ? (
+              <div className="diag-box">
+                <div>
+                  Schema v{systemStatus.schemaVersion} ·{" "}
+                  {systemStatus.loadedAccountCount} loaded
+                </div>
+                <div>
+                  Memory ~{systemStatus.approximateMemoryMb ?? "?"} MB
+                </div>
+                <div>
+                  Unexpected restart: {String(systemStatus.unexpectedRestart)}
+                </div>
+                <div>Locked: {String(systemStatus.appLocked)}</div>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() =>
+                void window.desktop.diagnostics
+                  .previewSupportBundle()
+                  .then(setBundlePreview)
+              }
+            >
+              Preview support bundle
+            </button>
+            {bundlePreview ? (
+              <div className="diag-box">
+                <div>Generated {bundlePreview.generatedAt}</div>
+                {bundlePreview.files.map((f) => (
+                  <div key={f.name}>
+                    {f.name} ({f.bytes} B) — {f.description}
+                  </div>
+                ))}
+                <div className="hint">
+                  Excludes: {bundlePreview.excludes.join("; ")}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void run(async () => {
+                      const result =
+                        await window.desktop.diagnostics.createSupportBundle();
+                      if (!result.path) {
+                        throw new Error("Save cancelled");
+                      }
+                    })
+                  }
+                >
+                  Save ZIP…
+                </button>
+              </div>
+            ) : null}
             <div className="nav-label">Notification diagnostics</div>
             <button
               type="button"

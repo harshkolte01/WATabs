@@ -77,6 +77,30 @@ function mergeSettings(raw: Record<string, unknown>): AppSettings {
       typeof raw.warnOnExecutableDownload === "boolean"
         ? raw.warnOnExecutableDownload
         : DEFAULT_SETTINGS.warnOnExecutableDownload,
+    appLockEnabled:
+      typeof raw.appLockEnabled === "boolean"
+        ? raw.appLockEnabled
+        : DEFAULT_SETTINGS.appLockEnabled,
+    autoLockMinutes:
+      raw.autoLockMinutes === 5 ||
+      raw.autoLockMinutes === 15 ||
+      raw.autoLockMinutes === 30 ||
+      raw.autoLockMinutes === 60 ||
+      raw.autoLockMinutes === null
+        ? raw.autoLockMinutes
+        : DEFAULT_SETTINGS.autoLockMinutes,
+    lockOnOsLock:
+      typeof raw.lockOnOsLock === "boolean"
+        ? raw.lockOnOsLock
+        : DEFAULT_SETTINGS.lockOnOsLock,
+    requirePinAfterRestart:
+      typeof raw.requirePinAfterRestart === "boolean"
+        ? raw.requirePinAfterRestart
+        : DEFAULT_SETTINGS.requirePinAfterRestart,
+    hideAccountLabelsWhenLocked:
+      typeof raw.hideAccountLabelsWhenLocked === "boolean"
+        ? raw.hideAccountLabelsWhenLocked
+        : DEFAULT_SETTINGS.hideAccountLabelsWhenLocked,
   };
 }
 
@@ -169,15 +193,26 @@ const toV4: Migration = (input) => {
   } satisfies AppMetadata;
 };
 
+const toV5: Migration = (input) => {
+  const raw = asPartialMeta(input);
+  const v4 = toV4(raw) as AppMetadata;
+  return {
+    ...v4,
+    schemaVersion: 5,
+    settings: mergeSettings(v4.settings as unknown as Record<string, unknown>),
+  } satisfies AppMetadata;
+};
+
 const migrations: Record<number, Migration> = {
   1: toV1,
   2: toV2,
   3: toV3,
   4: toV4,
+  5: toV5,
 };
 
 export function createDefaultMetadata(): AppMetadata {
-  return toV4({}) as AppMetadata;
+  return toV5({}) as AppMetadata;
 }
 
 export function migrateMetadata(raw: unknown): AppMetadata {

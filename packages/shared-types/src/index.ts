@@ -26,6 +26,59 @@ export interface AppSettings {
   /** null → OS Downloads directory */
   downloadDirectory: string | null;
   warnOnExecutableDownload: boolean;
+  appLockEnabled: boolean;
+  /** null = auto-lock off; otherwise minutes */
+  autoLockMinutes: 5 | 15 | 30 | 60 | null;
+  lockOnOsLock: boolean;
+  requirePinAfterRestart: boolean;
+  hideAccountLabelsWhenLocked: boolean;
+}
+
+export type RecoveryAccountStatus =
+  | "ok"
+  | "crashed"
+  | "unresponsive"
+  | "load_failed"
+  | "needs_manual_recovery"
+  | "offline";
+
+export interface RecoveryAccountState {
+  accountId: string;
+  status: RecoveryAccountStatus;
+  lastCrashAt?: string;
+  autoAttemptsInWindow: number;
+  message?: string;
+}
+
+export interface LockStatus {
+  enabled: boolean;
+  locked: boolean;
+  encryptionAvailable: boolean;
+  hasVerifier: boolean;
+  autoLockMinutes: 5 | 15 | 30 | 60 | null;
+  lockOnOsLock: boolean;
+  requirePinAfterRestart: boolean;
+  hideAccountLabelsWhenLocked: boolean;
+  unlockDelayMs: number;
+  /** Casual protection disclaimer for UI */
+  isEncryption: false;
+}
+
+export interface SystemStatus {
+  appName: string;
+  appVersion: string;
+  electron: string;
+  chrome: string;
+  platform: string;
+  arch: string;
+  isPackaged: boolean;
+  schemaVersion: number;
+  loadedAccountCount: number;
+  accountStatuses: RecoveryAccountState[];
+  approximateMemoryMb: number | null;
+  unexpectedRestart: boolean;
+  appLockEnabled: boolean;
+  appLocked: boolean;
 }
 
 export type DownloadState =
@@ -145,9 +198,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   askWhereToSaveEachFile: false,
   downloadDirectory: null,
   warnOnExecutableDownload: true,
+  appLockEnabled: false,
+  autoLockMinutes: null,
+  lockOnOsLock: true,
+  requirePinAfterRestart: true,
+  hideAccountLabelsWhenLocked: false,
 };
 
-export const CURRENT_SCHEMA_VERSION = 4 as const;
+export const CURRENT_SCHEMA_VERSION = 5 as const;
 
 export function partitionName(accountId: string): string {
   return `persist:wa-${accountId}`;

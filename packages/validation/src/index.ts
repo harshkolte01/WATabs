@@ -12,6 +12,10 @@ export const windowStateSchema = z.object({
   isMaximized: z.boolean(),
 });
 
+export const autoLockMinutesSchema = z
+  .union([z.literal(5), z.literal(15), z.literal(30), z.literal(60)])
+  .nullable();
+
 export const appSettingsSchema = z.object({
   launchMinimized: z.boolean(),
   notificationsGlobalEnabled: z.boolean(),
@@ -22,7 +26,45 @@ export const appSettingsSchema = z.object({
   askWhereToSaveEachFile: z.boolean(),
   downloadDirectory: z.string().nullable(),
   warnOnExecutableDownload: z.boolean(),
+  appLockEnabled: z.boolean(),
+  autoLockMinutes: autoLockMinutesSchema,
+  lockOnOsLock: z.boolean(),
+  requirePinAfterRestart: z.boolean(),
+  hideAccountLabelsWhenLocked: z.boolean(),
 });
+
+export const pinSchema = z
+  .string()
+  .regex(/^\d{4,8}$/, "PIN must be 4–8 digits");
+
+export const enableLockInputSchema = z.object({
+  pin: pinSchema,
+  confirmPin: pinSchema,
+  autoLockMinutes: autoLockMinutesSchema.optional(),
+  lockOnOsLock: z.boolean().optional(),
+  requirePinAfterRestart: z.boolean().optional(),
+  hideAccountLabelsWhenLocked: z.boolean().optional(),
+});
+
+export const unlockInputSchema = z.object({
+  pin: pinSchema,
+});
+
+export const configureLockInputSchema = z.object({
+  autoLockMinutes: autoLockMinutesSchema.optional(),
+  lockOnOsLock: z.boolean().optional(),
+  requirePinAfterRestart: z.boolean().optional(),
+  hideAccountLabelsWhenLocked: z.boolean().optional(),
+});
+
+export const recoveryAccountStatusSchema = z.enum([
+  "ok",
+  "crashed",
+  "unresponsive",
+  "load_failed",
+  "needs_manual_recovery",
+  "offline",
+]);
 
 export const downloadStateSchema = z.enum([
   "starting",
@@ -189,6 +231,21 @@ export const ipcChannels = {
   downloadsChooseDirectory: "desktop:downloads:choose-directory",
   downloadsOpen: "desktop:downloads:open",
   downloadsChanged: "desktop:downloads:changed",
+  lockGetStatus: "desktop:lock:get-status",
+  lockEnable: "desktop:lock:enable",
+  lockConfigure: "desktop:lock:configure",
+  lockLock: "desktop:lock:lock",
+  lockUnlock: "desktop:lock:unlock",
+  lockReset: "desktop:lock:reset",
+  lockChanged: "desktop:lock:changed",
+  recoveryList: "desktop:recovery:list",
+  recoveryRetry: "desktop:recovery:retry",
+  recoveryReload: "desktop:recovery:reload",
+  recoveryChanged: "desktop:recovery:changed",
+  diagnosticsGetSystemStatus: "desktop:diagnostics:get-system-status",
+  diagnosticsPreviewSupportBundle:
+    "desktop:diagnostics:preview-support-bundle",
+  diagnosticsCreateSupportBundle: "desktop:diagnostics:create-support-bundle",
 } as const;
 
 export type IpcChannel = (typeof ipcChannels)[keyof typeof ipcChannels];

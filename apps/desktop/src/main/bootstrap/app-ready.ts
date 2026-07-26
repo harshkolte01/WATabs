@@ -8,8 +8,14 @@ import {
 } from "../accounts/account-manager";
 import { log } from "../diagnostics/log-manager";
 import { registerIpcHandlers } from "../ipc/handlers";
+import { registerPowerEvents } from "../lifecycle/power-events";
+import { checkUnexpectedRestart } from "../lifecycle/shutdown-marker";
 import { registerAppProtocolHandler } from "../protocol/app-protocol";
 import { getSettings, loadMetadata } from "../storage/metadata-store";
+import {
+  applyStartupLockPolicy,
+  getLockStatus,
+} from "../system/app-lock-manager";
 import { createTray, rebuildTrayMenu } from "../system/tray-manager";
 import {
   syncLoginItemSettings,
@@ -31,8 +37,10 @@ export function configureAppIdentity(): void {
 export async function onAppReady(): Promise<void> {
   registerAppProtocolHandler();
   loadMetadata();
+  checkUnexpectedRestart();
   syncLoginItemSettings();
   registerIpcHandlers();
+  registerPowerEvents();
   onAccountsChanged((reason) => {
     notifyShellAccountsChanged(reason);
     rebuildTrayMenu();
@@ -49,7 +57,16 @@ export async function onAppReady(): Promise<void> {
     createTray();
   }
 
+  applyStartupLockPolicy();
   await restoreAccountsOnStartup();
+  // If we started locked, keep views hidden after restore.
+  if (getLockStatus().locked) {
+    const { selectAccountView } = await import(
+      "../accounts/account-view-manager"
+    );
+    selectAccountView(null);
+  }
+
   log("info", "app_ready", {
     electron: process.versions.electron,
     platform: process.platform,

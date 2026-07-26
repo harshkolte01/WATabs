@@ -21,10 +21,19 @@ export function writeAtomicJson(filePath: string, data: unknown): void {
   fs.renameSync(tempPath, filePath);
 }
 
+/**
+ * Copy current primary → backup. Call BEFORE overwriting primary with a new
+ * write so a bad new write cannot replace the last known good backup.
+ */
 export function copyLastKnownGood(userData: string): void {
   const primary = metadataPath(userData);
   const backup = metadataBackupPath(userData);
   if (fs.existsSync(primary)) {
     fs.copyFileSync(primary, backup);
   }
+}
+
+/** Whether backup refresh should run before a primary overwrite. */
+export function shouldRefreshBackupBeforeWrite(): boolean {
+  return true;
 }

@@ -75,6 +75,22 @@ export function attachNavigationPolicy(
       reason: details.reason,
       exitCode: details.exitCode,
     });
+    void import("../lifecycle/crash-recovery").then(({ handleRenderProcessGone }) => {
+      handleRenderProcessGone(accountId);
+    });
+  });
+
+  webContents.on("unresponsive", () => {
+    log("warn", "account_unresponsive", { accountId });
+    void import("../lifecycle/crash-recovery").then(({ handleUnresponsive }) => {
+      handleUnresponsive(accountId);
+    });
+  });
+
+  webContents.on("responsive", () => {
+    void import("../lifecycle/crash-recovery").then(({ handleResponsive }) => {
+      handleResponsive(accountId);
+    });
   });
 }
 
