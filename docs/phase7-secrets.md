@@ -7,26 +7,24 @@ Do **not** put values in the repo, `.env` committed to git, renderer/preload cod
 
 | Secret name | Purpose |
 | --- | --- |
-| `WINDOWS_CODE_SIGN_CERT` | Base64 or file reference for Authenticode cert |
+| `WINDOWS_CODE_SIGN_CERT` | Base64-encoded `.pfx` / `.p12` (decoded in release CI to `WINDOWS_CODE_SIGN_CERT_PATH`) |
 | `WINDOWS_CODE_SIGN_PASSWORD` | Certificate password |
+
+Release CI sets `WINDOWS_CODE_SIGN_CERT_PATH` for Forge `packagerConfig.windowsSign`.
+
+**Self-signed (current):** run `scripts/generate-self-signed-windows-cert.ps1`, then copy `.secrets/watabs-codesign.b64.txt` and `.secrets/watabs-codesign.password.txt` into those secrets. See `docs/WINDOWS_SIGNED_RELEASE.md`.
 
 ## macOS
 
-| Secret name | Purpose |
-| --- | --- |
-| `APPLE_DEVELOPER_ID_CERT` | Developer ID Application certificate |
-| `APPLE_DEVELOPER_ID_PASSWORD` | Cert export password |
-| `APPLE_API_KEY` | App Store Connect API key (`.p8` contents) |
-| `APPLE_API_KEY_ID` | API key id |
-| `APPLE_API_ISSUER` | API issuer id |
-| `APPLE_TEAM_ID` | Apple Developer team id |
+**Out of scope.** We are not collecting Apple Developer ID certificates or App Store Connect notarization credentials.  
+Release CI may still produce an **unsigned** macOS ZIP for local/testing use; it is not Gatekeeper-ready for public distribution.
 
 ## Updates & publish
 
 | Secret name | Purpose |
 | --- | --- |
-| `UPDATE_SIGN_PRIVATE_KEY` | Private key for signed update metadata / packages |
-| `GH_RELEASE_TOKEN` | Token with `contents: write` to publish Releases (or use `GITHUB_TOKEN` with permissions) |
+| `UPDATE_SIGN_PRIVATE_KEY` | Private key for signed update metadata / packages (when enabled) |
+| `GH_RELEASE_TOKEN` | Optional; otherwise `GITHUB_TOKEN` with `contents: write` on the release workflow |
 
 ## Rules
 

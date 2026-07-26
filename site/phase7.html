@@ -6,7 +6,7 @@
     <title>Phase 7 — Packaging &amp; Updates · WATabs</title>
     <meta
       name="description"
-      content="Stepwise Phase 7 plan for WATabs: signing, macOS notarization, channels, and electron-updater via GitHub Releases."
+      content="Stepwise Phase 7 plan for WATabs: Windows signing, channels, and electron-updater via GitHub Releases."
     />
     <link rel="icon" href="./assets/icon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -53,8 +53,8 @@
               <h3>Prerequisites &amp; secrets</h3>
               <p>
                 Inventory CI secrets only (never in the repo or packaged app):
-                Windows signing, Apple Developer ID + notarization, update
-                signing key, release publish token. Names documented in
+                Windows signing, update signing key, release token. Apple
+                signing/notarization is out of scope. Names in
                 <code>docs/phase7-secrets.md</code>.
               </p>
             </div>
@@ -87,10 +87,11 @@
           <li data-step="3">
             <div class="step-num">3</div>
             <div class="step-body">
-              <h3>macOS packaging &amp; notarization</h3>
+              <h3>macOS packaging (unsigned)</h3>
               <p>
-                Build on macOS runners (Windows builds do not run on Mac). Sign
-                + notarize; confirm notifications still work on signed builds.
+                Build on macOS runners (Windows builds do not run on Mac).
+                Produce an unsigned ZIP for testing only — Apple Developer ID
+                signing and notarization are out of scope.
               </p>
             </div>
             <span class="status-badge" data-status-badge>Not started</span>
@@ -136,9 +137,9 @@
               <h3>Acceptance gate</h3>
               <ul>
                 <li>Fresh install, upgrade, uninstall pass</li>
-                <li>Notifications on signed Windows and notarized macOS</li>
+                <li>Notifications on signed Windows builds</li>
                 <li>Updates preserve all account partitions</li>
-                <li>Signatures and notarization verify</li>
+                <li>Windows signatures verify (macOS Apple signing skipped)</li>
               </ul>
               <p>
                 Only then claim auto-update is live for users (flip

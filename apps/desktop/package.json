@@ -1,7 +1,7 @@
 {
   "name": "@multi-whatsapp/desktop",
   "productName": "WATabs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "WATabs — multi-account WhatsApp Web desktop workspace",
   "main": ".vite/build/index.js",
@@ -21,6 +21,7 @@
   "dependencies": {
     "@multi-whatsapp/shared-types": "workspace:*",
     "@multi-whatsapp/validation": "workspace:*",
+    "electron-updater": "6.6.2",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "zod": "4.4.3"

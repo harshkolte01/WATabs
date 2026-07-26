@@ -1,0 +1,181 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Build Windows
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Ensure Electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Build shared packages
+        run: pnpm --filter @multi-whatsapp/shared-types --filter @multi-whatsapp/validation run build
+
+      - name: Decode Windows code-signing cert
+        if: ${{ secrets.WINDOWS_CODE_SIGN_CERT != '' }}
+        env:
+          WINDOWS_CODE_SIGN_CERT: ${{ secrets.WINDOWS_CODE_SIGN_CERT }}
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String($env:WINDOWS_CODE_SIGN_CERT)
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\watabs-codesign.pfx", $bytes)
+          echo "WINDOWS_CODE_SIGN_CERT_PATH=$env:RUNNER_TEMP\watabs-codesign.pfx" >> $env:GITHUB_ENV
+
+      - name: Make Windows installers
+        env:
+          # CERT_PATH comes from GITHUB_ENV when the decode step ran.
+          WINDOWS_CODE_SIGN_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGN_PASSWORD }}
+        run: pnpm --filter @multi-whatsapp/desktop run make
+
+      - name: Verify Authenticode signature
+        if: ${{ secrets.WINDOWS_CODE_SIGN_CERT != '' }}
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem -Path apps/desktop/out -Recurse -Filter "*Setup*.exe" | Select-Object -First 1
+          if (-not $setup) { $setup = Get-ChildItem -Path apps/desktop/out -Recurse -Filter "*.exe" | Where-Object { $_.Name -like "WATabs*" } | Select-Object -First 1 }
+          if (-not $setup) { throw "No WATabs exe found to verify" }
+          Write-Host "Verifying $($setup.FullName)"
+          $sig = Get-AuthenticodeSignature -FilePath $setup.FullName
+          Write-Host "Status: $($sig.Status) Signer: $($sig.SignerCertificate.Subject)"
+          # Self-signed: Status is often not Valid (issuer not in trust store) — require a signer present.
+          # CA-issued: Status should be Valid on windows-latest.
+          if (-not $sig.SignerCertificate) { throw "No Authenticode signer certificate on build artifact" }
+          if ($sig.Status -eq "NotSigned") { throw "Artifact is NotSigned" }
+          Write-Host "Signature present (self-signed OK for pipeline; CA certs should show Status=Valid)."
+
+      - name: Package for fuse verify
+        run: pnpm package
+
+      - name: Verify Electron fuses
+        run: pnpm verify:fuses
+
+      - name: Release artifacts (checksums + SBOM)
+        run: pnpm exec tsx scripts/release-artifacts.ts apps/desktop/out
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            apps/desktop/out/**/*.exe
+            apps/desktop/out/**/*.nupkg
+            apps/desktop/out/**/RELEASES
+            apps/desktop/out/release-meta/**
+
+  macos:
+    name: Build macOS
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Ensure Electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Build shared packages
+        run: pnpm --filter @multi-whatsapp/shared-types --filter @multi-whatsapp/validation run build
+
+      - name: Make macOS ZIP (unsigned — Apple signing out of scope)
+        run: pnpm --filter @multi-whatsapp/desktop run make
+
+      - name: Release artifacts (checksums + SBOM)
+        run: pnpm exec tsx scripts/release-artifacts.ts apps/desktop/out
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: |
+            apps/desktop/out/**/*.zip
+            apps/desktop/out/**/*.dmg
+            apps/desktop/out/release-meta/**
+
+  publish:
+    name: Publish GitHub Release
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: dist/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-release
+          path: dist/macos
+
+      - name: Collect release files
+        id: collect
+        shell: bash
+        run: |
+          mkdir -p dist/upload
+          find dist/windows dist/macos -type f \( \
+            -name '*.exe' -o -name '*.nupkg' -o -name 'RELEASES' -o \
+            -name '*.zip' -o -name '*.dmg' -o -name 'SHA256SUMS.txt' -o -name 'sbom.json' \
+          \) -exec cp -n {} dist/upload/ \; || true
+          ls -la dist/upload
+          echo "count=$(find dist/upload -type f | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          generate_release_notes: true
+          files: dist/upload/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

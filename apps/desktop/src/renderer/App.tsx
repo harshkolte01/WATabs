@@ -9,6 +9,7 @@ import type {
   PermissionPreference,
   RecoveryAccountState,
   SystemStatus,
+  UpdateStatus,
 } from "@multi-whatsapp/shared-types";
 import type {
   ClosePromptPayload,
@@ -74,6 +75,7 @@ export function App() {
     excludes: string[];
     generatedAt: string;
   } | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
 
   const refreshAccounts = useCallback(async () => {
     const result = await window.desktop.accounts.list();
@@ -138,6 +140,13 @@ export function App() {
         unsubs.push(
           window.desktop.recovery.onChanged((states) => {
             setRecovery(states);
+          }),
+        );
+        const initialUpdate = await window.desktop.updates.getStatus();
+        if (!cancelled) setUpdateStatus(initialUpdate);
+        unsubs.push(
+          window.desktop.updates.onChanged((status) => {
+            setUpdateStatus(status);
           }),
         );
       } catch (err) {
@@ -348,6 +357,51 @@ export function App() {
               </p>
             ) : null}
           </div>
+        </div>
+      ) : null}
+      {updateStatus &&
+      (updateStatus.state === "available" ||
+        updateStatus.state === "downloading" ||
+        updateStatus.state === "ready") ? (
+        <div className="update-banner" role="status">
+          {updateStatus.state === "available" ? (
+            <>
+              <span>
+                Update {updateStatus.availableVersion} available (you have{" "}
+                {updateStatus.currentVersion}).
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void window.desktop.updates.download().then(setUpdateStatus)
+                }
+              >
+                Download
+              </button>
+            </>
+          ) : null}
+          {updateStatus.state === "downloading" ? (
+            <span>Downloading update… {updateStatus.percent ?? 0}%</span>
+          ) : null}
+          {updateStatus.state === "ready" ? (
+            <>
+              <span>
+                Update ready
+                {updateStatus.availableVersion
+                  ? ` (${updateStatus.availableVersion})`
+                  : ""}
+                . Restart to apply. Sessions stay on disk.
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void window.desktop.updates.install()}
+              >
+                Restart &amp; install
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
       <aside className="sidebar">
@@ -1272,6 +1326,88 @@ export function App() {
                 </p>
               </>
             )}
+            <div className="nav-label">Updates</div>
+            <div className="diag-box">
+              <div>Version {info?.version ?? updateStatus?.currentVersion ?? "—"}</div>
+              <div>
+                Channel:{" "}
+                <select
+                  value={settings?.updateChannel ?? "stable"}
+                  disabled={busy}
+                  onChange={(e) => {
+                    const channel =
+                      e.target.value === "beta" ? "beta" : "stable";
+                    void patchSettings({ updateChannel: channel }).then(() =>
+                      window.desktop.updates.getStatus().then(setUpdateStatus),
+                    );
+                  }}
+                >
+                  <option value="stable">Stable</option>
+                  <option value="beta">Beta</option>
+                </select>
+              </div>
+              <div>
+                Last check:{" "}
+                {settings?.lastUpdateCheckAt
+                  ? new Date(settings.lastUpdateCheckAt).toLocaleString()
+                  : updateStatus?.lastCheckedAt
+                    ? new Date(updateStatus.lastCheckedAt).toLocaleString()
+                    : "—"}
+              </div>
+              <div>
+                Status: {updateStatus?.state ?? "—"}
+                {updateStatus?.availableVersion
+                  ? ` · ${updateStatus.availableVersion}`
+                  : ""}
+              </div>
+              {updateStatus?.errorMessage ? (
+                <div className="hint">{updateStatus.errorMessage}</div>
+              ) : null}
+              {!info?.isPackaged ? (
+                <p className="hint">
+                  Auto-update runs only in packaged builds. Dev /{" "}
+                  <code>pnpm start</code> has no update feed.
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  const next = await window.desktop.updates.check();
+                  setUpdateStatus(next);
+                  setSettings(await window.desktop.getSettings());
+                })
+              }
+            >
+              Check for updates
+            </button>
+            {updateStatus?.state === "available" ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void window.desktop.updates.download().then(setUpdateStatus)
+                }
+              >
+                Download update
+              </button>
+            ) : null}
+            {updateStatus?.state === "ready" ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void window.desktop.updates.install()}
+              >
+                Restart &amp; install
+              </button>
+            ) : null}
+            <p className="hint">
+              Release notes / manual download:{" "}
+              {updateStatus?.releaseNotesUrl ??
+                "https://github.com/harshkolte01/WATabls/releases/latest"}
+            </p>
             <div className="nav-label">Diagnostics</div>
             <button
               type="button"

@@ -12,6 +12,7 @@ import type {
   PermissionPreference,
   RecoveryAccountState,
   SystemStatus,
+  UpdateStatus,
   WindowState,
 } from "@multi-whatsapp/shared-types";
 
@@ -245,6 +246,26 @@ const diagnosticsApi = {
     ipcRenderer.invoke(ipcChannels.diagnosticsCreateSupportBundle),
 };
 
+const updatesApi = {
+  getStatus: (): Promise<UpdateStatus> =>
+    ipcRenderer.invoke(ipcChannels.updatesGetStatus),
+  check: (): Promise<UpdateStatus> =>
+    ipcRenderer.invoke(ipcChannels.updatesCheck),
+  download: (): Promise<UpdateStatus> =>
+    ipcRenderer.invoke(ipcChannels.updatesDownload),
+  install: (): Promise<{ ok: boolean; reason?: string }> =>
+    ipcRenderer.invoke(ipcChannels.updatesInstall),
+  onChanged: (callback: (status: UpdateStatus) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, next: UpdateStatus) => {
+      callback(next);
+    };
+    ipcRenderer.on(ipcChannels.updatesChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.updatesChanged, listener);
+    };
+  },
+};
+
 const desktop = {
   getAppInfo: (): Promise<AppInfo> =>
     ipcRenderer.invoke(ipcChannels.getAppInfo),
@@ -265,6 +286,7 @@ const desktop = {
   lock: lockApi,
   recovery: recoveryApi,
   diagnostics: diagnosticsApi,
+  updates: updatesApi,
   onClosePrompt: (
     callback: (payload: ClosePromptPayload) => void,
   ): (() => void) => {

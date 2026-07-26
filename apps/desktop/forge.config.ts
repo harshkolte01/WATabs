@@ -8,6 +8,15 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const iconBase = path.resolve(__dirname, "assets/icon");
 
+const windowsSign =
+  process.env.WINDOWS_CODE_SIGN_CERT_PATH &&
+  process.env.WINDOWS_CODE_SIGN_PASSWORD
+    ? {
+        certificateFile: process.env.WINDOWS_CODE_SIGN_CERT_PATH,
+        certificatePassword: process.env.WINDOWS_CODE_SIGN_PASSWORD,
+      }
+    : undefined;
+
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
@@ -17,12 +26,23 @@ const config: ForgeConfig = {
     // Keep aligned with APP_USER_MODEL_ID in shared-types.
     icon: iconBase,
     extraResource: [path.resolve(__dirname, "assets")],
+    // Windows Authenticode only when CI secrets are present.
+    // macOS Apple signing / notarization is intentionally out of scope.
+    ...(windowsSign ? { windowsSign } : {}),
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
       name: "WATabs",
       setupIcon: `${iconBase}.ico`,
+      // Sign Setup.exe + app at make time (Forge Windows signing guide).
+      ...(windowsSign
+        ? {
+            certificateFile: windowsSign.certificateFile,
+            certificatePassword: windowsSign.certificatePassword,
+            windowsSign,
+          }
+        : {}),
     }),
     new MakerZIP({}, ["darwin", "linux"]),
   ],

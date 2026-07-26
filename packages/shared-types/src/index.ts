@@ -14,6 +14,30 @@ export interface WindowState {
   isMaximized: boolean;
 }
 
+export type UpdateChannel = "stable" | "beta";
+
+export type UpdateLifecycleState =
+  | "idle"
+  | "checking"
+  | "available"
+  | "downloading"
+  | "ready"
+  | "error"
+  | "unavailable";
+
+export interface UpdateStatus {
+  state: UpdateLifecycleState;
+  channel: UpdateChannel;
+  currentVersion: string;
+  availableVersion: string | null;
+  percent: number | null;
+  errorMessage: string | null;
+  lastCheckedAt: string | null;
+  isPackaged: boolean;
+  /** GitHub Releases page for release notes / manual download */
+  releaseNotesUrl: string;
+}
+
 export interface AppSettings {
   launchMinimized: boolean;
   notificationsGlobalEnabled: boolean;
@@ -32,6 +56,10 @@ export interface AppSettings {
   lockOnOsLock: boolean;
   requirePinAfterRestart: boolean;
   hideAccountLabelsWhenLocked: boolean;
+  /** GitHub Releases channel for electron-updater */
+  updateChannel: UpdateChannel;
+  /** ISO timestamp of last update check; written by main only */
+  lastUpdateCheckAt: string | null;
 }
 
 export type RecoveryAccountStatus =
@@ -203,9 +231,19 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lockOnOsLock: true,
   requirePinAfterRestart: true,
   hideAccountLabelsWhenLocked: false,
+  updateChannel: "stable",
+  lastUpdateCheckAt: null,
 };
 
-export const CURRENT_SCHEMA_VERSION = 5 as const;
+/** Keep in sync with site/app.js and forge/GitHub Releases. */
+export const UPDATE_GITHUB_OWNER = "harshkolte01";
+export const UPDATE_GITHUB_REPO = "WATabls";
+
+export function githubReleasesLatestUrl(): string {
+  return `https://github.com/${UPDATE_GITHUB_OWNER}/${UPDATE_GITHUB_REPO}/releases/latest`;
+}
+
+export const CURRENT_SCHEMA_VERSION = 6 as const;
 
 export function partitionName(accountId: string): string {
   return `persist:wa-${accountId}`;

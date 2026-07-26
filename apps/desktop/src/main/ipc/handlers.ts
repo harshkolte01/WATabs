@@ -76,6 +76,13 @@ import {
   updateAccountPermissions,
   updateSettings,
 } from "../storage/metadata-store";
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getUpdateStatus,
+  installUpdate,
+  setUpdateChannel,
+} from "../updates/update-manager";
 import { respondClosePrompt } from "../windows/close-prompt";
 import { assertTrustedShellSender } from "./sender-validation";
 
@@ -132,14 +139,20 @@ export function registerIpcHandlers(): void {
       throw new Error("Invalid settings payload");
     }
     // Lock enable/disable must go through desktop.lock.* (PIN required).
+    // lastUpdateCheckAt is written only by the update manager.
     const {
       appLockEnabled: _a,
       autoLockMinutes: _b,
       lockOnOsLock: _c,
       requirePinAfterRestart: _d,
       hideAccountLabelsWhenLocked: _e,
+      lastUpdateCheckAt: _f,
+      updateChannel,
       ...safePatch
     } = parsed.data;
+    if (updateChannel) {
+      setUpdateChannel(updateChannel);
+    }
     return updateSettings(safePatch);
   });
 
@@ -432,6 +445,26 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(ipcChannels.diagnosticsCreateSupportBundle, async (event) => {
     assertTrustedShellSender(event);
     return createSupportBundle();
+  });
+
+  ipcMain.handle(ipcChannels.updatesGetStatus, (event) => {
+    assertTrustedShellSender(event);
+    return getUpdateStatus();
+  });
+
+  ipcMain.handle(ipcChannels.updatesCheck, async (event) => {
+    shellActivity(event);
+    return checkForUpdates();
+  });
+
+  ipcMain.handle(ipcChannels.updatesDownload, async (event) => {
+    shellActivity(event);
+    return downloadUpdate();
+  });
+
+  ipcMain.handle(ipcChannels.updatesInstall, (event) => {
+    assertTrustedShellSender(event);
+    return installUpdate();
   });
 
   void getBadgeSnapshot;

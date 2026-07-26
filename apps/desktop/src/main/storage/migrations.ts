@@ -101,6 +101,15 @@ function mergeSettings(raw: Record<string, unknown>): AppSettings {
       typeof raw.hideAccountLabelsWhenLocked === "boolean"
         ? raw.hideAccountLabelsWhenLocked
         : DEFAULT_SETTINGS.hideAccountLabelsWhenLocked,
+    updateChannel:
+      raw.updateChannel === "stable" || raw.updateChannel === "beta"
+        ? raw.updateChannel
+        : DEFAULT_SETTINGS.updateChannel,
+    lastUpdateCheckAt:
+      typeof raw.lastUpdateCheckAt === "string" ||
+      raw.lastUpdateCheckAt === null
+        ? (raw.lastUpdateCheckAt as string | null)
+        : DEFAULT_SETTINGS.lastUpdateCheckAt,
   };
 }
 
@@ -203,16 +212,27 @@ const toV5: Migration = (input) => {
   } satisfies AppMetadata;
 };
 
+const toV6: Migration = (input) => {
+  const raw = asPartialMeta(input);
+  const v5 = toV5(raw) as AppMetadata;
+  return {
+    ...v5,
+    schemaVersion: 6,
+    settings: mergeSettings(v5.settings as unknown as Record<string, unknown>),
+  } satisfies AppMetadata;
+};
+
 const migrations: Record<number, Migration> = {
   1: toV1,
   2: toV2,
   3: toV3,
   4: toV4,
   5: toV5,
+  6: toV6,
 };
 
 export function createDefaultMetadata(): AppMetadata {
-  return toV5({}) as AppMetadata;
+  return toV6({}) as AppMetadata;
 }
 
 export function migrateMetadata(raw: unknown): AppMetadata {

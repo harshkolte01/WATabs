@@ -26,7 +26,30 @@ body,
 .app {
   display: grid;
   grid-template-columns: var(--sidebar) 1fr;
+  grid-template-rows: auto 1fr;
   height: 100%;
+}
+
+.update-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 14px;
+  background: #1e3a32;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.update-banner button {
+  flex-shrink: 0;
+}
+
+.sidebar,
+main {
+  min-height: 0;
 }
 
 .sidebar {

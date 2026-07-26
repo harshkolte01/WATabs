@@ -65,9 +65,9 @@
 
         <h2>Trust model</h2>
         <ul>
-          <li>OS code signing (Windows Authenticode; Apple Developer ID)</li>
-          <li>macOS notarization for Gatekeeper</li>
-          <li>Update payload signatures verified by the app before apply</li>
+          <li>OS code signing on Windows (Authenticode) when cert secrets are set</li>
+          <li>macOS Apple signing / notarization is out of scope (unsigned ZIP only)</li>
+          <li>Update payload signatures verified by the app before apply (when feed is live)</li>
           <li>Electron fuses hardened on packaged builds (DevTools off, etc.)</li>
         </ul>
 

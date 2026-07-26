@@ -11,5 +11,8 @@ coverage/
 apps/desktop/out/
 apps/desktop/.vite/
 .vite/
+.secrets/
+*.pfx
+*.p12
 
 implementation_plan.md

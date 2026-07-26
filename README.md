@@ -42,10 +42,16 @@ Static HTML in [`site/`](site/). Deploy with Vercel **Root Directory** = `site`,
 
 ## Updates (Phase 7)
 
-**Until Phase 7 is built:** `pnpm start` / local `pnpm package` have **no** auto-update. Users install new builds manually from GitHub Releases.
+Desktop updater (`electron-updater`) is wired for **packaged** builds only. `pnpm start` reports updates as unavailable.
 
-Auto-update for users depends on Phase 7 implementing the updater, signing keys, and a published signed feed (GitHub Releases + `electron-updater`). See `implementation_plan.md` Phase 7 steps 0–7 and [`site/phase7.html`](site/phase7.html).
+- Channels: Settings → Updates (`stable` / `beta`)
+- Feed: GitHub Releases (`harshkolte01/WATabls`)
+- Release CI: [`.github/workflows/release.yml`](.github/workflows/release.yml) on `v*` tags
+- Secrets: [`docs/phase7-secrets.md`](docs/phase7-secrets.md)
+- Smoke: [`docs/PHASE7_MANUAL_SMOKE.md`](docs/PHASE7_MANUAL_SMOKE.md)
+
+`autoUpdateLive` on the public site stays `false` until Step 7 acceptance (signed feed + partition smoke) passes.
 
 ## Status
 
-Phases 0–6 land in the desktop app; Phase 7 packaging/updates is planned (roadmap site ready). See `implementation_plan.md`.
+Phases 0–6 complete in-app; Phase 7 updater/CI landed — signing certs + live feed acceptance still required. See `implementation_plan.md`.

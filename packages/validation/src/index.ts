@@ -16,6 +16,18 @@ export const autoLockMinutesSchema = z
   .union([z.literal(5), z.literal(15), z.literal(30), z.literal(60)])
   .nullable();
 
+export const updateChannelSchema = z.enum(["stable", "beta"]);
+
+export const updateLifecycleStateSchema = z.enum([
+  "idle",
+  "checking",
+  "available",
+  "downloading",
+  "ready",
+  "error",
+  "unavailable",
+]);
+
 export const appSettingsSchema = z.object({
   launchMinimized: z.boolean(),
   notificationsGlobalEnabled: z.boolean(),
@@ -31,6 +43,20 @@ export const appSettingsSchema = z.object({
   lockOnOsLock: z.boolean(),
   requirePinAfterRestart: z.boolean(),
   hideAccountLabelsWhenLocked: z.boolean(),
+  updateChannel: updateChannelSchema,
+  lastUpdateCheckAt: z.string().nullable(),
+});
+
+export const updateStatusSchema = z.object({
+  state: updateLifecycleStateSchema,
+  channel: updateChannelSchema,
+  currentVersion: z.string(),
+  availableVersion: z.string().nullable(),
+  percent: z.number().nullable(),
+  errorMessage: z.string().nullable(),
+  lastCheckedAt: z.string().nullable(),
+  isPackaged: z.boolean(),
+  releaseNotesUrl: z.string().url(),
 });
 
 export const pinSchema = z
@@ -249,6 +275,11 @@ export const ipcChannels = {
   diagnosticsPreviewSupportBundle:
     "desktop:diagnostics:preview-support-bundle",
   diagnosticsCreateSupportBundle: "desktop:diagnostics:create-support-bundle",
+  updatesGetStatus: "desktop:updates:get-status",
+  updatesCheck: "desktop:updates:check",
+  updatesDownload: "desktop:updates:download",
+  updatesInstall: "desktop:updates:install",
+  updatesChanged: "desktop:updates:changed",
 } as const;
 
 export type IpcChannel = (typeof ipcChannels)[keyof typeof ipcChannels];

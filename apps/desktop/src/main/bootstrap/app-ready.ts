@@ -21,6 +21,7 @@ import {
   syncLoginItemSettings,
   wasOpenedAsHidden,
 } from "../system/startup-manager";
+import { initUpdateManager } from "../updates/update-manager";
 import { installApplicationMenu } from "../windows/application-menu";
 import {
   createMainWindow,
@@ -68,6 +69,9 @@ export async function onAppReady(): Promise<void> {
     );
     selectAccountView(null);
   }
+
+  // After shell exists so update events can reach the renderer.
+  initUpdateManager();
 
   log("info", "app_ready", {
     electron: process.versions.electron,
