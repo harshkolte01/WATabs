@@ -32,7 +32,7 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit and security tests
+      - name: Unit, security, and integration tests
         run: pnpm test:unit
 
       - name: Prohibited pattern scan

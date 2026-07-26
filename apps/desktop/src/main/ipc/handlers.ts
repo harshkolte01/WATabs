@@ -1,6 +1,26 @@
 import { app, ipcMain } from "electron";
 import type { AppInfo } from "@multi-whatsapp/shared-types";
-import { ipcChannels, updateSettingsSchema } from "@multi-whatsapp/validation";
+import {
+  accountIdSchema,
+  createAccountInputSchema,
+  ipcChannels,
+  renameAccountInputSchema,
+  reorderAccountsInputSchema,
+  setEnabledInputSchema,
+  updateSettingsSchema,
+} from "@multi-whatsapp/validation";
+import {
+  clearAccountSession,
+  createAccount,
+  listAccountRecords,
+  reloadAccount,
+  removeAccount,
+  renameAccount,
+  reorderAccounts,
+  selectAccount,
+  setAccountEnabled,
+  getSelectedAccountId,
+} from "../accounts/account-manager";
 import { log } from "../diagnostics/log-manager";
 import {
   getSettings,
@@ -51,5 +71,81 @@ export function registerIpcHandlers(): void {
       throw new Error("Invalid settings payload");
     }
     return updateSettings(parsed.data);
+  });
+
+  ipcMain.handle(ipcChannels.accountsList, (event) => {
+    assertTrustedShellSender(event);
+    return {
+      accounts: listAccountRecords(),
+      selectedAccountId: getSelectedAccountId(),
+    };
+  });
+
+  ipcMain.handle(ipcChannels.accountsCreate, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = createAccountInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid create account payload");
+    }
+    return createAccount(parsed.data);
+  });
+
+  ipcMain.handle(ipcChannels.accountsSelect, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    return selectAccount(accountId);
+  });
+
+  ipcMain.handle(ipcChannels.accountsRename, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = renameAccountInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid rename payload");
+    }
+    return renameAccount(parsed.data.accountId, parsed.data.label);
+  });
+
+  ipcMain.handle(ipcChannels.accountsReorder, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = reorderAccountsInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid reorder payload");
+    }
+    return reorderAccounts(parsed.data.accountIds);
+  });
+
+  ipcMain.handle(
+    ipcChannels.accountsSetEnabled,
+    async (event, payload: unknown) => {
+      assertTrustedShellSender(event);
+      const parsed = setEnabledInputSchema.safeParse(payload);
+      if (!parsed.success) {
+        throw new Error("Invalid setEnabled payload");
+      }
+      return setAccountEnabled(parsed.data.accountId, parsed.data.enabled);
+    },
+  );
+
+  ipcMain.handle(ipcChannels.accountsReload, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    reloadAccount(accountId);
+    return { ok: true as const };
+  });
+
+  ipcMain.handle(
+    ipcChannels.accountsClearSession,
+    async (event, payload: unknown) => {
+      assertTrustedShellSender(event);
+      const accountId = accountIdSchema.parse(payload);
+      return clearAccountSession(accountId);
+    },
+  );
+
+  ipcMain.handle(ipcChannels.accountsRemove, async (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const accountId = accountIdSchema.parse(payload);
+    await removeAccount(accountId);
+    return { ok: true as const };
   });
 }

@@ -1,30 +1,101 @@
 import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_SETTINGS,
+  createAccountDefaults,
+  type AccountRecord,
   type AppMetadata,
 } from "@multi-whatsapp/shared-types";
 
-type Migration = (input: unknown) => AppMetadata;
+type Migration = (input: unknown) => unknown;
+
+function asPartialMeta(input: unknown): Record<string, unknown> {
+  if (input && typeof input === "object") {
+    return input as Record<string, unknown>;
+  }
+  return {};
+}
+
+function upgradeStubAccount(
+  raw: Record<string, unknown>,
+  index: number,
+): AccountRecord {
+  const id = String(raw.id ?? "");
+  const label = String(raw.label ?? `Account ${index + 1}`);
+  const order = typeof raw.order === "number" ? raw.order : index;
+  const enabled = typeof raw.enabled === "boolean" ? raw.enabled : true;
+  const partial = raw as Partial<AccountRecord>;
+  return createAccountDefaults(id, label, order, {
+    ...partial,
+    id,
+    label,
+    order,
+    enabled,
+    partition:
+      typeof raw.partition === "string" && raw.partition.length > 0
+        ? raw.partition
+        : undefined,
+  });
+}
 
 const toV1: Migration = (input) => {
-  const raw = (input ?? {}) as Partial<AppMetadata>;
+  const raw = asPartialMeta(input);
+  const settings = (raw.settings ?? {}) as Record<string, unknown>;
   return {
     schemaVersion: 1,
     windowState: raw.windowState ?? null,
     settings: {
       launchMinimized:
-        raw.settings?.launchMinimized ?? DEFAULT_SETTINGS.launchMinimized,
+        typeof settings.launchMinimized === "boolean"
+          ? settings.launchMinimized
+          : DEFAULT_SETTINGS.launchMinimized,
     },
     accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
   };
 };
 
+const toV2: Migration = (input) => {
+  const raw = asPartialMeta(input);
+  const v1 = toV1(raw) as {
+    schemaVersion: number;
+    windowState: AppMetadata["windowState"];
+    settings: AppMetadata["settings"];
+    accounts: unknown[];
+  };
+
+  const accounts = (Array.isArray(v1.accounts) ? v1.accounts : []).map(
+    (item, index) =>
+      upgradeStubAccount(
+        item && typeof item === "object"
+          ? (item as Record<string, unknown>)
+          : {},
+        index,
+      ),
+  );
+
+  const lastSelected =
+    typeof raw.lastSelectedAccountId === "string"
+      ? raw.lastSelectedAccountId
+      : null;
+
+  return {
+    schemaVersion: 2,
+    windowState: v1.windowState,
+    settings: v1.settings,
+    accounts,
+    lastSelectedAccountId:
+      lastSelected && accounts.some((a) => a.id === lastSelected)
+        ? lastSelected
+        : null,
+  } satisfies AppMetadata;
+};
+
 const migrations: Record<number, Migration> = {
   1: toV1,
+  2: toV2,
 };
 
 export function createDefaultMetadata(): AppMetadata {
-  return toV1({});
+  return toV2({}) as AppMetadata;
 }
 
 export function migrateMetadata(raw: unknown): AppMetadata {
@@ -60,6 +131,5 @@ export function migrateMetadata(raw: unknown): AppMetadata {
     from = next;
   }
 
-  // Re-normalize current schema through the latest migrator for defaults.
-  return migrations[CURRENT_SCHEMA_VERSION]!(current);
+  return migrations[CURRENT_SCHEMA_VERSION]!(current) as AppMetadata;
 }
