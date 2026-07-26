@@ -6,7 +6,7 @@
 
 ### Multiple WhatsApp Web accounts. One secure desktop app.
 
-Use Personal, Business, Support, and other WhatsApp Web accounts inside one clean desktop workspace, with every account running in its own isolated session.
+Use Personal, Business, Support, and other WhatsApp Web accounts inside one clean desktop workspace, with every account running in its own individual session.
 
 <br />
 
