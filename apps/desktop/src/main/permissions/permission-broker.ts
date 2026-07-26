@@ -1,11 +1,42 @@
 import type { PermissionPreference } from "@multi-whatsapp/shared-types";
 import { isAllowedWhatsAppOrigin } from "../navigation/protocol-allowlist";
-import { getAccount, upsertAccount } from "../storage/metadata-store";
+import {
+  getAccount,
+  getSettings,
+  upsertAccount,
+} from "../storage/metadata-store";
 import { log } from "../diagnostics/log-manager";
 import {
   requestShellPrompt,
   type PromptDecision,
 } from "./permission-prompt";
+
+/** Pure helper for tests and broker. */
+export function areNotificationsGloballyAllowed(settings: {
+  notificationsGlobalEnabled: boolean;
+  notificationsPausedUntil: string | null;
+  now?: number;
+}): boolean {
+  if (!settings.notificationsGlobalEnabled) {
+    return false;
+  }
+  if (settings.notificationsPausedUntil) {
+    const until = Date.parse(settings.notificationsPausedUntil);
+    if (Number.isFinite(until) && until > (settings.now ?? Date.now())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function notificationsAllowedForAccount(accountId: string): boolean {
+  const settings = getSettings();
+  if (!areNotificationsGloballyAllowed(settings)) {
+    return false;
+  }
+  const account = getAccount(accountId);
+  return Boolean(account?.notificationsEnabled);
+}
 
 export type PermissionFamily =
   | "notifications"
@@ -99,6 +130,9 @@ export function evaluatePermissionCheck(input: {
   const family = classifyPermission(permission);
   if (family === "unknown") return false;
   if (family === "fullscreen") return true;
+  if (family === "notifications") {
+    return notificationsAllowedForAccount(accountId);
+  }
 
   const pref = preferenceFor(accountId, family);
   if (pref === "disabled" || pref === "block" || pref === null) return false;
@@ -140,6 +174,17 @@ export async function evaluatePermissionRequest(input: {
 
   if (family === "fullscreen") {
     return true;
+  }
+
+  if (family === "notifications") {
+    const allowed = notificationsAllowedForAccount(accountId);
+    log("info", "permission_request", {
+      accountId,
+      permission,
+      allowed,
+      reason: allowed ? "ok" : "muted",
+    });
+    return allowed;
   }
 
   const pref = preferenceFor(accountId, family);
@@ -234,10 +279,16 @@ export function decidePermissionSync(input: {
   originOk: boolean;
   family: PermissionFamily;
   pref: PermissionPreference | "enabled" | "disabled" | null;
+  globalNotificationsAllowed?: boolean;
 }): "allow" | "deny" | "ask" {
   if (!input.originOk) return "deny";
   if (input.family === "unknown") return "deny";
   if (input.family === "fullscreen") return "allow";
+  if (input.family === "notifications") {
+    if (input.globalNotificationsAllowed === false) return "deny";
+    if (input.pref === "disabled" || input.pref === null) return "deny";
+    return "allow";
+  }
   if (input.pref === "disabled" || input.pref === "block" || input.pref === null) {
     return "deny";
   }

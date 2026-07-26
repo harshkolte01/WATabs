@@ -10,6 +10,8 @@ const config: ForgeConfig = {
     asar: true,
     name: "multi-whatsapp-desktop",
     executableName: "multi-whatsapp-desktop",
+    appBundleId: "com.multiwhatsapp.desktop",
+    // Keep aligned with APP_USER_MODEL_ID in shared-types.
   },
   rebuildConfig: {},
   makers: [

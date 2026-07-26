@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { ipcChannels } from "@multi-whatsapp/validation";
 import type {
+  AccountBadgeState,
   AccountRecord,
   AppInfo,
   AppSettings,
   CreateAccountInput,
+  NotificationDiagnostics,
   PermissionPreference,
   WindowState,
 } from "@multi-whatsapp/shared-types";
@@ -19,6 +21,11 @@ export type PermissionPromptPayload = {
   message: string;
 };
 
+export type ClosePromptPayload = {
+  requestId: string;
+  message: string;
+};
+
 export type AccountPermissions = {
   accountId: string;
   notificationsEnabled: boolean;
@@ -29,10 +36,6 @@ export type AccountPermissions = {
   displayCapturePermission: PermissionPreference;
 };
 
-/**
- * Narrow shell bridge only. Do not expose a generic channel invoke helper.
- * WhatsApp views must never receive this preload.
- */
 const accountsApi = {
   list: (): Promise<{
     accounts: AccountRecord[];
@@ -48,6 +51,11 @@ const accountsApi = {
     ipcRenderer.invoke(ipcChannels.accountsReorder, { accountIds }),
   setEnabled: (accountId: string, enabled: boolean): Promise<AccountRecord> =>
     ipcRenderer.invoke(ipcChannels.accountsSetEnabled, { accountId, enabled }),
+  setAudioMuted: (accountId: string, muted: boolean): Promise<AccountRecord> =>
+    ipcRenderer.invoke(ipcChannels.accountsSetAudioMuted, {
+      accountId,
+      muted,
+    }),
   reload: (accountId: string): Promise<{ ok: true }> =>
     ipcRenderer.invoke(ipcChannels.accountsReload, accountId),
   clearSession: (accountId: string): Promise<AccountRecord> =>
@@ -103,6 +111,30 @@ const permissionsApi = {
   },
 };
 
+const notificationsApi = {
+  getDiagnostics: (): Promise<NotificationDiagnostics> =>
+    ipcRenderer.invoke(ipcChannels.notificationsGetDiagnostics),
+  sendTest: (): Promise<{ ok: boolean; at: string }> =>
+    ipcRenderer.invoke(ipcChannels.notificationsSendTest),
+  onBadgesChanged: (
+    callback: (badges: AccountBadgeState[]) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      badges: AccountBadgeState[],
+    ) => {
+      callback(badges);
+    };
+    ipcRenderer.on(ipcChannels.notificationsBadgesChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(
+        ipcChannels.notificationsBadgesChanged,
+        listener,
+      );
+    };
+  },
+};
+
 const desktop = {
   getAppInfo: (): Promise<AppInfo> =>
     ipcRenderer.invoke(ipcChannels.getAppInfo),
@@ -116,6 +148,31 @@ const desktop = {
     ipcRenderer.invoke(ipcChannels.updateSettings, patch),
   accounts: accountsApi,
   permissions: permissionsApi,
+  notifications: notificationsApi,
+  onClosePrompt: (
+    callback: (payload: ClosePromptPayload) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      payload: ClosePromptPayload,
+    ) => {
+      callback(payload);
+    };
+    ipcRenderer.on(ipcChannels.windowClosePrompt, listener);
+    return () => {
+      ipcRenderer.removeListener(ipcChannels.windowClosePrompt, listener);
+    };
+  },
+  respondClosePrompt: (
+    requestId: string,
+    choice: "keep" | "quit",
+    remember: boolean,
+  ): Promise<{ ok: boolean }> =>
+    ipcRenderer.invoke(ipcChannels.windowCloseDecision, {
+      requestId,
+      choice,
+      remember,
+    }),
 };
 
 contextBridge.exposeInMainWorld("desktop", desktop);

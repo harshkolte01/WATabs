@@ -1,5 +1,5 @@
 const SENSITIVE_KEY =
-  /(password|token|cookie|authorization|phone|message|notification|qr|secret|clipboard)/i;
+  /(password|token|cookie|authorization|phone|message|notification|qr|secret|clipboard|title|body|sender|preview)/i;
 
 const URL_RE = /https?:\/\/[^\s]+/gi;
 

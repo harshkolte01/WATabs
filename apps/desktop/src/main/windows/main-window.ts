@@ -9,6 +9,15 @@ import {
   relayout,
 } from "../accounts/account-view-manager";
 import { registerShellPromptSender } from "../permissions/shell-bridge";
+import {
+  createTray,
+  handleCloseToTrayPreference,
+  hideToTray,
+  setRunningInTray,
+} from "../system/tray-manager";
+import { getSettings, updateSettings } from "../storage/metadata-store";
+import { isAppQuitting, requestAppQuit } from "./app-lifecycle";
+import { askCloseToTrayPrompt } from "./close-prompt";
 import { layoutShellView } from "./view-layout";
 import { resolveInitialWindowState, trackWindowState } from "./window-state";
 
@@ -17,6 +26,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 let mainWindow: BrowserWindow | null = null;
 let shellView: WebContentsView | null = null;
+let handlingClose = false;
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
@@ -24,6 +34,18 @@ export function getMainWindow(): BrowserWindow | null {
 
 export function getShellView(): WebContentsView | null {
   return shellView;
+}
+
+export function showMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.show();
+  mainWindow.focus();
+  setRunningInTray(false);
+}
+
+export function hideMainWindowToTray(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.hide();
 }
 
 function createShellView(): WebContentsView {
@@ -56,8 +78,10 @@ function createShellView(): WebContentsView {
   return view;
 }
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow(options: { show?: boolean } = {}): BrowserWindow {
+  const { show = true } = options;
   const initial = resolveInitialWindowState();
+  const settings = getSettings();
 
   mainWindow = new BrowserWindow({
     x: initial.bounds.x,
@@ -68,7 +92,6 @@ export function createMainWindow(): BrowserWindow {
     backgroundColor: "#0f1418",
     title: "Multi Account Desktop",
     webPreferences: {
-      // Window webContents is unused; shell + accounts are WebContentsViews.
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -98,23 +121,59 @@ export function createMainWindow(): BrowserWindow {
     relayout();
   });
 
-  mainWindow.once("ready-to-show", () => {
-    mainWindow?.show();
-  });
-
-  // Show once shell is ready (accounts restored before show in app-ready).
-  shellView.webContents.once("did-finish-load", () => {
-    mainWindow?.show();
+  mainWindow.on("close", (event) => {
+    if (isAppQuitting() || handlingClose) {
+      return;
+    }
+    event.preventDefault();
+    void handleWindowCloseRequest();
   });
 
   mainWindow.on("closed", () => {
-    // Child WebContentsViews are already destroyed with the window.
     abandonAllAccountViews();
     shellView = null;
     mainWindow = null;
   });
 
+  if (show && !settings.launchMinimized) {
+    shellView.webContents.once("did-finish-load", () => {
+      mainWindow?.show();
+    });
+  } else if (!show) {
+    createTray();
+    setRunningInTray(true);
+  }
+
   return mainWindow;
+}
+
+async function handleWindowCloseRequest(): Promise<void> {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  handlingClose = true;
+  try {
+    const preference = handleCloseToTrayPreference();
+    if (preference === "quit") {
+      requestAppQuit();
+      return;
+    }
+    if (preference === "hide") {
+      hideToTray();
+      return;
+    }
+
+    // Windows first-close ask
+    const { choice, remember } = await askCloseToTrayPrompt();
+    if (remember) {
+      updateSettings({ closeToTray: choice === "keep" });
+    }
+    if (choice === "quit") {
+      requestAppQuit();
+      return;
+    }
+    hideToTray();
+  } finally {
+    handlingClose = false;
+  }
 }
 
 export function notifyShellAccountsChanged(reason: string): void {

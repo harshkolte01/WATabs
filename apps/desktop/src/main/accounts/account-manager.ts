@@ -25,6 +25,7 @@ import {
   recreateAccountView,
   reloadAccountView,
   selectAccountView,
+  setAccountViewAudioMuted,
 } from "./account-view-manager";
 
 const STARTUP_CONCURRENCY = 3;
@@ -35,6 +36,7 @@ export type AccountsChangedReason =
   | "rename"
   | "reorder"
   | "setEnabled"
+  | "setAudioMuted"
   | "reload"
   | "clearSession"
   | "remove"
@@ -166,6 +168,25 @@ export async function setAccountEnabled(
   }
 
   emitChanged("setEnabled");
+  return updated;
+}
+
+export function setAccountAudioMuted(
+  accountId: string,
+  muted: boolean,
+): AccountRecord {
+  const account = getAccount(accountId);
+  if (!account) {
+    throw new Error("Unknown account");
+  }
+  const updated = {
+    ...account,
+    audioMuted: muted,
+    updatedAt: new Date().toISOString(),
+  };
+  upsertAccount(updated);
+  setAccountViewAudioMuted(accountId, muted);
+  emitChanged("setAudioMuted");
   return updated;
 }
 

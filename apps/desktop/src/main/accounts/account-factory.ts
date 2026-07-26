@@ -1,8 +1,11 @@
 import { WebContentsView, app } from "electron";
 import { WHATSAPP_URL, partitionName } from "@multi-whatsapp/shared-types";
 import { log } from "../diagnostics/log-manager";
+import { onAccountTitleUpdated } from "../notifications/badge-manager";
+import { registerAccountWebContents } from "../notifications/notification-coordinator";
 import { attachNavigationPolicy } from "../navigation/navigation-policy";
 import { attachSessionPermissionHandlers } from "../permissions/session-permissions";
+import { getAccount } from "../storage/metadata-store";
 import { accountViewDevToolsEnabled } from "./devtools-policy";
 import { attachDownloadHandlers } from "./downloads";
 import { sessionForPartition } from "./session-factory";
@@ -43,6 +46,16 @@ export function createAccountWebContentsView(
   });
 
   attachNavigationPolicy(view.webContents, id);
+  registerAccountWebContents(id, view.webContents);
+
+  view.webContents.on("page-title-updated", (_e, title) => {
+    onAccountTitleUpdated(id, title);
+  });
+
+  const account = getAccount(id);
+  if (account?.audioMuted) {
+    view.webContents.setAudioMuted(true);
+  }
 
   if (app.isPackaged) {
     view.webContents.on("before-input-event", (event, input) => {

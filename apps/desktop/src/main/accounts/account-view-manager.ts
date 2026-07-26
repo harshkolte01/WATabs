@@ -4,6 +4,7 @@ import {
   loadWhatsApp,
   type AccountViewHandle,
 } from "./account-factory";
+import { clearAccountBadge } from "../notifications/badge-manager";
 import { layoutAccountViews } from "../windows/view-layout";
 import { log } from "../diagnostics/log-manager";
 
@@ -75,12 +76,24 @@ export function recreateAccountView(accountId: string, label: string): void {
   }
 }
 
+export function setAccountViewAudioMuted(
+  accountId: string,
+  muted: boolean,
+): void {
+  const handle = views.get(accountId);
+  if (!handle || handle.view.webContents.isDestroyed()) {
+    return;
+  }
+  handle.view.webContents.setAudioMuted(muted);
+}
+
 export function destroyAccountView(accountId: string): void {
   const handle = views.get(accountId);
   if (!handle) {
     return;
   }
   views.delete(accountId);
+  clearAccountBadge(accountId);
   if (selectedId === accountId) {
     selectedId = null;
   }

@@ -2,11 +2,13 @@ import { app, ipcMain } from "electron";
 import type { AppInfo } from "@multi-whatsapp/shared-types";
 import {
   accountIdSchema,
+  closeToTrayChoiceSchema,
   createAccountInputSchema,
   ipcChannels,
   permissionPromptResponseSchema,
   renameAccountInputSchema,
   reorderAccountsInputSchema,
+  setAudioMutedInputSchema,
   setEnabledInputSchema,
   updateAccountPermissionsSchema,
   updateSettingsSchema,
@@ -20,10 +22,16 @@ import {
   renameAccount,
   reorderAccounts,
   selectAccount,
+  setAccountAudioMuted,
   setAccountEnabled,
   getSelectedAccountId,
 } from "../accounts/account-manager";
 import { log } from "../diagnostics/log-manager";
+import {
+  getNotificationDiagnostics,
+  sendShellTestNotification,
+} from "../notifications/notification-diagnostics";
+import { getBadgeSnapshot } from "../notifications/badge-manager";
 import { respondToShellPrompt } from "../permissions/permission-prompt";
 import {
   getAccount,
@@ -33,6 +41,7 @@ import {
   updateAccountPermissions,
   updateSettings,
 } from "../storage/metadata-store";
+import { respondClosePrompt } from "../windows/close-prompt";
 import { assertTrustedShellSender } from "./sender-validation";
 
 export function registerIpcHandlers(): void {
@@ -131,6 +140,15 @@ export function registerIpcHandlers(): void {
     },
   );
 
+  ipcMain.handle(ipcChannels.accountsSetAudioMuted, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = setAudioMutedInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid setAudioMuted payload");
+    }
+    return setAccountAudioMuted(parsed.data.accountId, parsed.data.muted);
+  });
+
   ipcMain.handle(ipcChannels.accountsReload, (event, payload: unknown) => {
     assertTrustedShellSender(event);
     const accountId = accountIdSchema.parse(payload);
@@ -208,4 +226,29 @@ export function registerIpcHandlers(): void {
       return { ok };
     },
   );
+
+  ipcMain.handle(ipcChannels.notificationsGetDiagnostics, (event) => {
+    assertTrustedShellSender(event);
+    return getNotificationDiagnostics();
+  });
+
+  ipcMain.handle(ipcChannels.notificationsSendTest, (event) => {
+    assertTrustedShellSender(event);
+    return sendShellTestNotification();
+  });
+
+  ipcMain.handle(ipcChannels.windowCloseDecision, (event, payload: unknown) => {
+    assertTrustedShellSender(event);
+    const parsed = closeToTrayChoiceSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error("Invalid close decision");
+    }
+    const ok = respondClosePrompt(parsed.data.requestId, {
+      choice: parsed.data.choice,
+      remember: parsed.data.remember,
+    });
+    return { ok };
+  });
+
+  void getBadgeSnapshot;
 }

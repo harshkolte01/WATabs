@@ -16,6 +16,12 @@ export interface WindowState {
 
 export interface AppSettings {
   launchMinimized: boolean;
+  notificationsGlobalEnabled: boolean;
+  notificationsPausedUntil: string | null;
+  /** null = ask on first Windows close */
+  closeToTray: boolean | null;
+  startAtLogin: boolean;
+  startHiddenInTray: boolean;
 }
 
 export interface AccountRecord {
@@ -30,6 +36,7 @@ export interface AccountRecord {
   notificationsEnabled: boolean;
   notificationSoundEnabled: boolean;
   unreadBadgeEnabled: boolean;
+  audioMuted: boolean;
   microphonePermission: PermissionPreference;
   cameraPermission: PermissionPreference;
   displayCapturePermission: PermissionPreference;
@@ -65,6 +72,25 @@ export interface CreateAccountInput {
   loadOnStartup?: boolean;
 }
 
+export interface AccountBadgeState {
+  accountId: string;
+  count: number | null;
+  attention: boolean;
+}
+
+export interface NotificationDiagnostics {
+  notificationsGlobalEnabled: boolean;
+  notificationsPausedUntil: string | null;
+  selectedAccountId: string | null;
+  selectedNotificationsEnabled: boolean | null;
+  selectedAudioMuted: boolean | null;
+  selectedViewLoaded: boolean;
+  runningInTray: boolean;
+  notificationApiSupported: boolean;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+}
+
 export const APP_SCHEME = "app";
 export const APP_HOST = "shell";
 export const SHELL_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
@@ -73,6 +99,9 @@ export const WHATSAPP_ORIGIN = "https://web.whatsapp.com";
 export const WHATSAPP_URL = `${WHATSAPP_ORIGIN}/`;
 
 export const SIDEBAR_WIDTH = 240;
+
+/** Windows App User Model ID — keep in sync with Forge packager appId. */
+export const APP_USER_MODEL_ID = "com.multiwhatsapp.desktop";
 
 export const DEFAULT_WINDOW_BOUNDS: WindowBounds = {
   x: 80,
@@ -83,9 +112,14 @@ export const DEFAULT_WINDOW_BOUNDS: WindowBounds = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   launchMinimized: false,
+  notificationsGlobalEnabled: true,
+  notificationsPausedUntil: null,
+  closeToTray: null,
+  startAtLogin: false,
+  startHiddenInTray: false,
 };
 
-export const CURRENT_SCHEMA_VERSION = 2 as const;
+export const CURRENT_SCHEMA_VERSION = 3 as const;
 
 export function partitionName(accountId: string): string {
   return `persist:wa-${accountId}`;
@@ -111,6 +145,7 @@ export function createAccountDefaults(
     notificationsEnabled: true,
     notificationSoundEnabled: true,
     unreadBadgeEnabled: true,
+    audioMuted: false,
     microphonePermission: "ask",
     cameraPermission: "ask",
     displayCapturePermission: "ask",

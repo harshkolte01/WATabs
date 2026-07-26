@@ -95,6 +95,23 @@ export function updateSettings(patch: Partial<AppSettings>): AppSettings {
     settings: { ...current.settings, ...patch },
   };
   persistMetadata(next);
+  // Lazy import avoids circular init with startup-manager.
+  void import("../system/startup-manager").then(({ syncLoginItemSettings }) => {
+    if (
+      "startAtLogin" in patch ||
+      "startHiddenInTray" in patch
+    ) {
+      syncLoginItemSettings();
+    }
+  });
+  void import("../system/tray-manager").then(({ rebuildTrayMenu }) => {
+    if (
+      "notificationsGlobalEnabled" in patch ||
+      "notificationsPausedUntil" in patch
+    ) {
+      rebuildTrayMenu();
+    }
+  });
   return next.settings;
 }
 

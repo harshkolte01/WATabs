@@ -4,6 +4,7 @@ import {
   createAccountDefaults,
   type AccountRecord,
   type AppMetadata,
+  type AppSettings,
 } from "@multi-whatsapp/shared-types";
 
 type Migration = (input: unknown) => unknown;
@@ -37,6 +38,36 @@ function upgradeStubAccount(
   });
 }
 
+function mergeSettings(raw: Record<string, unknown>): AppSettings {
+  return {
+    launchMinimized:
+      typeof raw.launchMinimized === "boolean"
+        ? raw.launchMinimized
+        : DEFAULT_SETTINGS.launchMinimized,
+    notificationsGlobalEnabled:
+      typeof raw.notificationsGlobalEnabled === "boolean"
+        ? raw.notificationsGlobalEnabled
+        : DEFAULT_SETTINGS.notificationsGlobalEnabled,
+    notificationsPausedUntil:
+      typeof raw.notificationsPausedUntil === "string" ||
+      raw.notificationsPausedUntil === null
+        ? (raw.notificationsPausedUntil as string | null)
+        : DEFAULT_SETTINGS.notificationsPausedUntil,
+    closeToTray:
+      typeof raw.closeToTray === "boolean" || raw.closeToTray === null
+        ? (raw.closeToTray as boolean | null)
+        : DEFAULT_SETTINGS.closeToTray,
+    startAtLogin:
+      typeof raw.startAtLogin === "boolean"
+        ? raw.startAtLogin
+        : DEFAULT_SETTINGS.startAtLogin,
+    startHiddenInTray:
+      typeof raw.startHiddenInTray === "boolean"
+        ? raw.startHiddenInTray
+        : DEFAULT_SETTINGS.startHiddenInTray,
+  };
+}
+
 const toV1: Migration = (input) => {
   const raw = asPartialMeta(input);
   const settings = (raw.settings ?? {}) as Record<string, unknown>;
@@ -58,7 +89,7 @@ const toV2: Migration = (input) => {
   const v1 = toV1(raw) as {
     schemaVersion: number;
     windowState: AppMetadata["windowState"];
-    settings: AppMetadata["settings"];
+    settings: { launchMinimized: boolean };
     accounts: unknown[];
   };
 
@@ -86,16 +117,44 @@ const toV2: Migration = (input) => {
       lastSelected && accounts.some((a) => a.id === lastSelected)
         ? lastSelected
         : null,
+  };
+};
+
+const toV3: Migration = (input) => {
+  const raw = asPartialMeta(input);
+  const v2 = toV2(raw) as {
+    schemaVersion: number;
+    windowState: AppMetadata["windowState"];
+    settings: Record<string, unknown>;
+    accounts: AccountRecord[];
+    lastSelectedAccountId: string | null;
+  };
+
+  const accounts = v2.accounts.map((account) =>
+    createAccountDefaults(account.id, account.label, account.order, {
+      ...account,
+      audioMuted:
+        typeof account.audioMuted === "boolean" ? account.audioMuted : false,
+    }),
+  );
+
+  return {
+    schemaVersion: 3,
+    windowState: v2.windowState,
+    settings: mergeSettings(v2.settings ?? {}),
+    accounts,
+    lastSelectedAccountId: v2.lastSelectedAccountId,
   } satisfies AppMetadata;
 };
 
 const migrations: Record<number, Migration> = {
   1: toV1,
   2: toV2,
+  3: toV3,
 };
 
 export function createDefaultMetadata(): AppMetadata {
-  return toV2({}) as AppMetadata;
+  return toV3({}) as AppMetadata;
 }
 
 export function migrateMetadata(raw: unknown): AppMetadata {

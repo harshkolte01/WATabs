@@ -14,6 +14,11 @@ export const windowStateSchema = z.object({
 
 export const appSettingsSchema = z.object({
   launchMinimized: z.boolean(),
+  notificationsGlobalEnabled: z.boolean(),
+  notificationsPausedUntil: z.string().nullable(),
+  closeToTray: z.boolean().nullable(),
+  startAtLogin: z.boolean(),
+  startHiddenInTray: z.boolean(),
 });
 
 export const permissionPreferenceSchema = z.enum(["ask", "allow", "block"]);
@@ -30,6 +35,7 @@ export const accountRecordSchema = z.object({
   notificationsEnabled: z.boolean(),
   notificationSoundEnabled: z.boolean(),
   unreadBadgeEnabled: z.boolean(),
+  audioMuted: z.boolean(),
   microphonePermission: permissionPreferenceSchema,
   cameraPermission: permissionPreferenceSchema,
   displayCapturePermission: permissionPreferenceSchema,
@@ -80,6 +86,11 @@ export const setEnabledInputSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const setAudioMutedInputSchema = z.object({
+  accountId: accountIdSchema,
+  muted: z.boolean(),
+});
+
 export const updateAccountPermissionsSchema = z.object({
   accountId: accountIdSchema,
   patch: z.object({
@@ -104,6 +115,12 @@ export const permissionPromptResponseSchema = z.object({
   ]),
 });
 
+export const closeToTrayChoiceSchema = z.object({
+  requestId: z.string().uuid(),
+  choice: z.enum(["keep", "quit"]),
+  remember: z.boolean(),
+});
+
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type CreateAccountInput = z.infer<typeof createAccountInputSchema>;
 export type UpdateAccountPermissionsInput = z.infer<
@@ -122,6 +139,7 @@ export const ipcChannels = {
   accountsRename: "desktop:accounts:rename",
   accountsReorder: "desktop:accounts:reorder",
   accountsSetEnabled: "desktop:accounts:set-enabled",
+  accountsSetAudioMuted: "desktop:accounts:set-audio-muted",
   accountsReload: "desktop:accounts:reload",
   accountsClearSession: "desktop:accounts:clear-session",
   accountsRemove: "desktop:accounts:remove",
@@ -130,6 +148,11 @@ export const ipcChannels = {
   permissionsUpdate: "desktop:permissions:update",
   permissionsRespondPrompt: "desktop:permissions:respond-prompt",
   permissionsPrompt: "desktop:permissions:prompt",
+  notificationsGetDiagnostics: "desktop:notifications:get-diagnostics",
+  notificationsSendTest: "desktop:notifications:send-test",
+  notificationsBadgesChanged: "desktop:notifications:badges-changed",
+  windowCloseDecision: "desktop:window:close-decision",
+  windowClosePrompt: "desktop:window:close-prompt",
 } as const;
 
 export type IpcChannel = (typeof ipcChannels)[keyof typeof ipcChannels];

@@ -302,3 +302,27 @@ button:disabled {
   white-space: pre-wrap;
   color: var(--text);
 }
+
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge-pill {
+  background: var(--accent);
+  color: #04140e;
+  border-color: transparent;
+}
+
+.diag-box {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}

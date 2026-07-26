@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
+  AccountBadgeState,
   AccountRecord,
   AppInfo,
   AppSettings,
+  NotificationDiagnostics,
   PermissionPreference,
 } from "@multi-whatsapp/shared-types";
-import type { PermissionPromptPayload } from "../preload/shell-preload";
+import type {
+  ClosePromptPayload,
+  PermissionPromptPayload,
+} from "../preload/shell-preload";
 
 type Tab = "accounts" | "settings";
 
@@ -31,6 +36,13 @@ export function App() {
   const [addLabel, setAddLabel] = useState("");
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
   const [prompt, setPrompt] = useState<PermissionPromptPayload | null>(null);
+  const [closePrompt, setClosePrompt] = useState<ClosePromptPayload | null>(
+    null,
+  );
+  const [closeRemember, setCloseRemember] = useState(true);
+  const [badges, setBadges] = useState<AccountBadgeState[]>([]);
+  const [diagnostics, setDiagnostics] =
+    useState<NotificationDiagnostics | null>(null);
 
   const refreshAccounts = useCallback(async () => {
     const result = await window.desktop.accounts.list();
@@ -40,8 +52,7 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    let unsubscribeChanged: (() => void) | undefined;
-    let unsubscribePrompt: (() => void) | undefined;
+    const unsubs: Array<() => void> = [];
     (async () => {
       try {
         const [appInfo, appSettings] = await Promise.all([
@@ -52,12 +63,27 @@ export function App() {
         setInfo(appInfo);
         setSettings(appSettings);
         await refreshAccounts();
-        unsubscribeChanged = window.desktop.accounts.onChanged(() => {
-          void refreshAccounts();
-        });
-        unsubscribePrompt = window.desktop.permissions.onPrompt((payload) => {
-          setPrompt(payload);
-        });
+        unsubs.push(
+          window.desktop.accounts.onChanged(() => {
+            void refreshAccounts();
+          }),
+        );
+        unsubs.push(
+          window.desktop.permissions.onPrompt((payload) => {
+            setPrompt(payload);
+          }),
+        );
+        unsubs.push(
+          window.desktop.onClosePrompt((payload) => {
+            setClosePrompt(payload);
+            setCloseRemember(true);
+          }),
+        );
+        unsubs.push(
+          window.desktop.notifications.onBadgesChanged((next) => {
+            setBadges(next);
+          }),
+        );
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load shell");
@@ -66,8 +92,7 @@ export function App() {
     })();
     return () => {
       cancelled = true;
-      unsubscribeChanged?.();
-      unsubscribePrompt?.();
+      for (const u of unsubs) u();
     };
   }, [refreshAccounts]);
 
@@ -143,12 +168,20 @@ export function App() {
     await run(() => window.desktop.accounts.remove(action.accountId));
   }
 
-  async function onToggleLaunchMinimized(): Promise<void> {
-    if (!settings) return;
-    const next = await window.desktop.updateSettings({
-      launchMinimized: !settings.launchMinimized,
-    });
+  async function patchSettings(
+    patch: Partial<AppSettings>,
+  ): Promise<void> {
+    const next = await window.desktop.updateSettings(patch);
     setSettings(next);
+  }
+
+  async function refreshDiagnostics(): Promise<void> {
+    const diag = await window.desktop.notifications.getDiagnostics();
+    setDiagnostics(diag);
+  }
+
+  function badgeFor(accountId: string): AccountBadgeState | undefined {
+    return badges.find((b) => b.accountId === accountId);
   }
 
   async function onPermissionPatch(
@@ -220,6 +253,49 @@ export function App() {
                 </button>
               </div>
             )}
+          </div>
+        ) : null}
+        {closePrompt ? (
+          <div className="prompt-box" role="dialog" aria-modal="true">
+            <p>{closePrompt.message}</p>
+            <label className="remember-row">
+              <input
+                type="checkbox"
+                checked={closeRemember}
+                onChange={(e) => setCloseRemember(e.target.checked)}
+              />
+              Remember my choice
+            </label>
+            <div className="inline-form">
+              <button
+                type="button"
+                onClick={() => {
+                  const id = closePrompt.requestId;
+                  setClosePrompt(null);
+                  void window.desktop.respondClosePrompt(
+                    id,
+                    "keep",
+                    closeRemember,
+                  );
+                }}
+              >
+                Keep running
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = closePrompt.requestId;
+                  setClosePrompt(null);
+                  void window.desktop.respondClosePrompt(
+                    id,
+                    "quit",
+                    closeRemember,
+                  );
+                }}
+              >
+                Quit
+              </button>
+            </div>
           </div>
         ) : null}
         <div className="nav-label">Accounts</div>
@@ -297,6 +373,11 @@ export function App() {
                   onClick={() => void onSelect(account.id)}
                 >
                   <span className="account-label">{account.label}</span>
+                  {badgeFor(account.id)?.attention ? (
+                    <span className="pill badge-pill">
+                      {badgeFor(account.id)?.count ?? "•"}
+                    </span>
+                  ) : null}
                   {!account.enabled ? (
                     <span className="pill">Disabled</span>
                   ) : null}
@@ -404,6 +485,38 @@ export function App() {
                         </button>
                       </label>
                       <label>
+                        <span>Audio mute</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          title="Mutes all audio from this account, including calls and media."
+                          onClick={() =>
+                            void run(() =>
+                              window.desktop.accounts.setAudioMuted(
+                                account.id,
+                                !account.audioMuted,
+                              ),
+                            )
+                          }
+                        >
+                          {account.audioMuted ? "Muted" : "On"}
+                        </button>
+                      </label>
+                      <label>
+                        <span>Badge</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            void onPermissionPatch(account.id, {
+                              unreadBadgeEnabled: !account.unreadBadgeEnabled,
+                            })
+                          }
+                        >
+                          {account.unreadBadgeEnabled ? "On" : "Off"}
+                        </button>
+                      </label>
+                      <label>
                         <span>Mic</span>
                         <select
                           value={account.microphonePermission}
@@ -485,10 +598,73 @@ export function App() {
         {tab === "settings" ? (
           <div className="settings sidebar-settings">
             <div className="row">
+              <span>Global notifications</span>
+              <button
+                type="button"
+                onClick={() =>
+                  void patchSettings({
+                    notificationsGlobalEnabled:
+                      !settings?.notificationsGlobalEnabled,
+                  })
+                }
+              >
+                {settings?.notificationsGlobalEnabled ? "On" : "Muted"}
+              </button>
+            </div>
+            <div className="row">
+              <span>Close to tray</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const cur = settings?.closeToTray;
+                  const next =
+                    cur === null ? true : cur === true ? false : null;
+                  void patchSettings({ closeToTray: next });
+                }}
+              >
+                {settings?.closeToTray === null
+                  ? "Ask"
+                  : settings?.closeToTray
+                    ? "Yes"
+                    : "No"}
+              </button>
+            </div>
+            <div className="row">
+              <span>Start at login</span>
+              <button
+                type="button"
+                onClick={() =>
+                  void patchSettings({
+                    startAtLogin: !settings?.startAtLogin,
+                  })
+                }
+              >
+                {settings?.startAtLogin ? "On" : "Off"}
+              </button>
+            </div>
+            <div className="row">
+              <span>Start hidden in tray</span>
+              <button
+                type="button"
+                disabled={!settings?.startAtLogin}
+                onClick={() =>
+                  void patchSettings({
+                    startHiddenInTray: !settings?.startHiddenInTray,
+                  })
+                }
+              >
+                {settings?.startHiddenInTray ? "On" : "Off"}
+              </button>
+            </div>
+            <div className="row">
               <span>Launch minimized</span>
               <button
                 type="button"
-                onClick={() => void onToggleLaunchMinimized()}
+                onClick={() =>
+                  void patchSettings({
+                    launchMinimized: !settings?.launchMinimized,
+                  })
+                }
               >
                 {settings?.launchMinimized ? "On" : "Off"}
               </button>
@@ -502,6 +678,39 @@ export function App() {
                 Reset
               </button>
             </div>
+            <div className="nav-label">Notification diagnostics</div>
+            <button
+              type="button"
+              onClick={() => void refreshDiagnostics()}
+            >
+              Refresh status
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                void window.desktop.notifications.sendTest().then(() => {
+                  void refreshDiagnostics();
+                })
+              }
+            >
+              Send test notification
+            </button>
+            {diagnostics ? (
+              <div className="diag-box">
+                <div>API supported: {String(diagnostics.notificationApiSupported)}</div>
+                <div>Global: {String(diagnostics.notificationsGlobalEnabled)}</div>
+                <div>In tray: {String(diagnostics.runningInTray)}</div>
+                <div>View loaded: {String(diagnostics.selectedViewLoaded)}</div>
+                <div>
+                  Last test:{" "}
+                  {diagnostics.lastTestOk == null
+                    ? "—"
+                    : diagnostics.lastTestOk
+                      ? "ok"
+                      : "fail"}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
         <div className="meta">
