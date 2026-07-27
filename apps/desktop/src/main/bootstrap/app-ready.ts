@@ -29,7 +29,8 @@ import {
 } from "../windows/main-window";
 
 export function configureAppIdentity(): void {
-  app.setName(APP_USER_DATA_NAME);
+  // Display name for taskbar / notifications; keep userData on the stable folder.
+  app.setName("WATabs");
   app.setPath("userData", path.join(app.getPath("appData"), APP_USER_DATA_NAME));
   if (process.platform === "win32") {
     app.setAppUserModelId(APP_USER_MODEL_ID);

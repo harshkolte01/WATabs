@@ -17,6 +17,7 @@ pnpm --filter @multi-whatsapp/desktop start
 |--------|---------|
 | `pnpm start` | Electron Forge + Vite dev |
 | `pnpm package` | Package app (enables fuse verification) |
+| `pnpm make` | Build installers (Windows NSIS wizard; macOS/linux ZIP) |
 | `pnpm test:unit` | Vitest unit/security tests |
 | `pnpm typecheck` | TypeScript check |
 

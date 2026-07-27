@@ -7,7 +7,7 @@ import {
 } from "../accounts/devtools-policy";
 import { loadAppIcon } from "../assets/app-icon";
 import { log } from "../diagnostics/log-manager";
-import { shellIndexUrl } from "../protocol/app-protocol";
+import { SHELL_PARTITION, shellIndexUrl } from "../protocol/app-protocol";
 import {
   abandonAllAccountViews,
   bindViewHost,
@@ -57,7 +57,7 @@ function createShellView(): WebContentsView {
   const allowDevTools = shellDevToolsEnabled(app.isPackaged);
   const view = new WebContentsView({
     webPreferences: {
-      partition: "persist:desktop-shell",
+      partition: SHELL_PARTITION,
       preload: path.join(__dirname, "shell-preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
@@ -78,6 +78,18 @@ function createShellView(): WebContentsView {
     });
   }
 
+  view.webContents.on(
+    "did-fail-load",
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (!isMainFrame) return;
+      log("error", "shell_did_fail_load", {
+        errorCode: String(errorCode),
+        errorDescription,
+        validatedURL,
+      });
+    },
+  );
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     void view.webContents.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     log("info", "shell_loaded_dev_vite", {});
@@ -86,11 +98,11 @@ function createShellView(): WebContentsView {
     log("info", "shell_loaded_app_protocol", {
       scheme: "watabs",
       host: "shell",
+      partition: SHELL_PARTITION,
     });
   }
 
-  // Never let shell popups/hand-offs send custom protocols to the OS
-  // (avoids Windows “Get an app to open this 'app'/'watabs' link”).
+  // Never let shell popups/hand-offs send custom protocols to the OS.
   view.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) {
       void import("../navigation/external-link-policy").then(

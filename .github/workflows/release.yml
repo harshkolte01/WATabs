@@ -58,18 +58,20 @@ jobs:
           "HAS_WINDOWS_CERT=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "Decoded Windows code-signing certificate."
 
-      - name: Make Windows installers
+      - name: Make Windows NSIS installer
         env:
           WINDOWS_CODE_SIGN_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGN_PASSWORD }}
         run: pnpm --filter @multi-whatsapp/desktop run make
+
+      - name: Verify Windows release artifacts
+        run: pnpm exec tsx scripts/verify-windows-release.ts apps/desktop/out
 
       - name: Verify Authenticode signature
         if: env.HAS_WINDOWS_CERT == 'true'
         shell: pwsh
         run: |
-          $setup = Get-ChildItem -Path apps/desktop/out -Recurse -Filter "*Setup*.exe" | Select-Object -First 1
-          if (-not $setup) { $setup = Get-ChildItem -Path apps/desktop/out -Recurse -Filter "*.exe" | Where-Object { $_.Name -like "WATabs*" } | Select-Object -First 1 }
-          if (-not $setup) { throw "No WATabs exe found to verify" }
+          $setup = Get-ChildItem -Path apps/desktop/out -Recurse -Filter "*-Setup.exe" | Select-Object -First 1
+          if (-not $setup) { throw "No WATabs-*-Setup.exe found to verify" }
           Write-Host "Verifying $($setup.FullName)"
           $sig = Get-AuthenticodeSignature -FilePath $setup.FullName
           Write-Host "Status: $($sig.Status) Signer: $($sig.SignerCertificate.Subject)"
@@ -90,10 +92,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
+          if-no-files-found: error
           path: |
-            apps/desktop/out/**/*.exe
-            apps/desktop/out/**/*.nupkg
-            apps/desktop/out/**/RELEASES
+            apps/desktop/out/make/**/*-Setup.exe
+            apps/desktop/out/make/**/*.yml
+            apps/desktop/out/make/**/*.yaml
+            apps/desktop/out/make/**/*.blockmap
             apps/desktop/out/release-meta/**
 
   macos:
@@ -128,6 +132,12 @@ jobs:
       - name: Make macOS ZIP (unsigned — Apple signing out of scope)
         run: pnpm --filter @multi-whatsapp/desktop run make
 
+      - name: Assert macOS ZIP exists
+        run: |
+          count=$(find apps/desktop/out -type f -name '*.zip' | wc -l | tr -d ' ')
+          echo "zip count=$count"
+          test "$count" -ge 1
+
       - name: Release artifacts (checksums + SBOM)
         run: pnpm exec tsx scripts/release-artifacts.ts apps/desktop/out
 
@@ -135,6 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-release
+          if-no-files-found: error
           path: |
             apps/desktop/out/**/*.zip
             apps/desktop/out/**/*.dmg
@@ -165,13 +176,23 @@ jobs:
         id: collect
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p dist/upload
-          find dist/windows dist/macos -type f \( \
-            -name '*.exe' -o -name '*.nupkg' -o -name 'RELEASES' -o \
+          # NSIS Setup only — never ship unpackaged WATabs.exe from package output
+          find dist/windows -type f \( \
+            -name '*-Setup.exe' -o -name 'latest.yml' -o -name 'latest.yaml' -o \
+            -name '*.blockmap' -o -name 'SHA256SUMS.txt' -o -name 'sbom.json' \
+          \) -exec cp -n {} dist/upload/ \;
+          find dist/macos -type f \( \
             -name '*.zip' -o -name '*.dmg' -o -name 'SHA256SUMS.txt' -o -name 'sbom.json' \
-          \) -exec cp -n {} dist/upload/ \; || true
+          \) -exec cp -n {} dist/upload/ \;
           ls -la dist/upload
-          echo "count=$(find dist/upload -type f | wc -l)" >> "$GITHUB_OUTPUT"
+          setup_count=$(find dist/upload -type f -name '*-Setup.exe' | wc -l | tr -d ' ')
+          yml_count=$(find dist/upload -type f -name 'latest.yml' | wc -l | tr -d ' ')
+          echo "setup_count=$setup_count yml_count=$yml_count"
+          test "$setup_count" -ge 1
+          test "$yml_count" -ge 1
+          echo "count=$(find dist/upload -type f | wc -l | tr -d ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -181,6 +202,6 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           generate_release_notes: true
           files: dist/upload/*
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

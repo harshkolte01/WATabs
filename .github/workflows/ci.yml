@@ -16,7 +16,7 @@ jobs:
   checks:
     name: Typecheck, tests, package
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     steps:
       - name: Checkout
@@ -51,11 +51,25 @@ jobs:
       - name: Verify no WhatsApp injection / prohibited patterns
         run: pnpm verify:no-injection
 
+      - name: Assert desktop version matches root
+        shell: pwsh
+        run: |
+          $root = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $desk = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version
+          if ($root -ne $desk) { throw "Version mismatch root=$root desktop=$desk" }
+          Write-Host "version=$desk"
+
       - name: Package desktop (WATabs)
         run: pnpm package
 
       - name: Verify Electron fuses
         run: pnpm verify:fuses
+
+      - name: Make Windows NSIS installer
+        run: pnpm --filter @multi-whatsapp/desktop run make
+
+      - name: Verify Windows release artifacts
+        run: pnpm exec tsx scripts/verify-windows-release.ts apps/desktop/out
 
       - name: Dependency audit (informational)
         continue-on-error: true

@@ -7,7 +7,7 @@
 
 ## Fresh install
 
-1. Install Windows Setup from a GitHub Release (or local `pnpm make` output).
+1. Install Windows NSIS Setup (`WATabs-<version>-Setup.exe`) from a GitHub Release (or local `pnpm make` output). Confirm the wizard offers install folder + shortcut options. If upgrading from a pre-0.1.4 Squirrel install, uninstall that copy first.
 2. Launch WATabs, add two accounts, scan QR for each.
 3. Confirm both stay logged in after restart.
 

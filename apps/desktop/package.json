@@ -1,7 +1,7 @@
 {
   "name": "@multi-whatsapp/desktop",
   "productName": "WATabs",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "private": true,
   "description": "WATabs — multi-account WhatsApp Web desktop workspace",
   "author": "WATabs",
@@ -19,6 +19,31 @@
     "test:unit": "node ../../node_modules/vitest/vitest.mjs run --config vitest.config.ts",
     "verify:fuses": "tsx ../../scripts/verify-fuses.ts"
   },
+  "build": {
+    "appId": "com.multiwhatsapp.desktop",
+    "productName": "WATabs",
+    "artifactName": "WATabs-${version}-Setup.${ext}",
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "icon": "icon.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WATabs",
+      "runAfterFinish": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico"
+    }
+  },
   "dependencies": {
     "@multi-whatsapp/shared-types": "workspace:*",
     "@multi-whatsapp/validation": "workspace:*",
@@ -28,8 +53,8 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@electron-addons/electron-forge-maker-nsis": "7.0.2",
     "@electron-forge/cli": "7.9.0",
-    "@electron-forge/maker-squirrel": "7.9.0",
     "@electron-forge/maker-zip": "7.9.0",
     "@electron-forge/plugin-fuses": "7.9.0",
     "@electron-forge/plugin-vite": "7.9.0",
@@ -37,9 +62,9 @@
     "@types/node": "24.3.0",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
-    "@vitejs/plugin-react": "5.0.2",
     "electron": "43.2.0",
     "typescript": "5.9.2",
+    "@vitejs/plugin-react": "5.0.2",
     "vite": "7.1.5",
     "vitest": "3.2.4"
   }

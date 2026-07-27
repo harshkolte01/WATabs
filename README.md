@@ -246,8 +246,10 @@ Read the complete security policy in [`SECURITY.md`](./SECURITY.md).
 ### Windows
 
 ```text
-WATabs-Setup-x64.exe
+WATabs-<version>-Setup.exe
 ```
+
+NSIS wizard: choose install folder, desktop/Start Menu shortcuts. If you previously installed a Squirrel one-click build, uninstall it from Apps & Features first.
 
 ### macOS Apple Silicon
 

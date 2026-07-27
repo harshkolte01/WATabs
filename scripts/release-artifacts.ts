@@ -45,10 +45,9 @@ function main(): void {
     const base = path.basename(f).toLowerCase();
     return (
       base.endsWith(".exe") ||
-      base.endsWith(".nupkg") ||
       base.endsWith(".zip") ||
       base.endsWith(".dmg") ||
-      base === "releases" ||
+      base.endsWith(".blockmap") ||
       base.endsWith(".yml") ||
       base.endsWith(".yaml")
     );

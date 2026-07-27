@@ -1,6 +1,6 @@
 {
   "name": "multi-whatsapp",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "private": true,
   "license": "MIT",
   "description": "Multiple WhatsApp Web accounts in one open-source Electron desktop app — isolated sessions, native notifications, and local-first privacy.",
@@ -20,9 +20,11 @@
     "package": "pnpm --filter @multi-whatsapp/desktop package",
     "make": "pnpm --filter @multi-whatsapp/desktop make",
     "release:artifacts": "tsx scripts/release-artifacts.ts",
+    "verify:windows-release": "tsx scripts/verify-windows-release.ts",
     "cert:windows-self-signed": "powershell -ExecutionPolicy Bypass -File scripts/generate-self-signed-windows-cert.ps1",
     "verify:no-injection": "tsx scripts/verify-no-injection.ts",
     "verify:fuses": "tsx scripts/verify-fuses.ts",
+    "icons:windows": "node scripts/rebuild-windows-icons.mjs",
     "security": "pnpm verify:no-injection"
   },
   "devDependencies": {

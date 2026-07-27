@@ -5,7 +5,7 @@
 const CONFIG = {
   owner: "harshkolte01",
   repo: "WATabs",
-  cacheKey: "watabs:latest-release:v1",
+  cacheKey: "watabs:latest-release:v2",
   cacheTtlMs: 10 * 60 * 1000,
 };
 
@@ -24,7 +24,13 @@ function detectPlatform() {
 }
 
 function isWinSetup(name) {
-  return /^WATabs/i.test(name) && /\.Setup\.exe$/i.test(name);
+  // NSIS: WATabs-0.1.4-Setup.exe; legacy Squirrel: WATabs-0.1.2.Setup.exe
+  return (
+    /^WATabs/i.test(name) &&
+    /\.exe$/i.test(name) &&
+    (/Setup/i.test(name) || /setup/i.test(name)) &&
+    !/\.blockmap$/i.test(name)
+  );
 }
 
 function isMacZip(name) {
@@ -34,7 +40,9 @@ function isMacZip(name) {
 function isJunk(name) {
   return (
     /\.nupkg$/i.test(name) ||
+    /\.blockmap$/i.test(name) ||
     /^RELEASES$/i.test(name) ||
+    /^latest\.ya?ml$/i.test(name) ||
     /^sbom\.json$/i.test(name) ||
     /^SHA256SUMS/i.test(name) ||
     /^WATabs\.exe$/i.test(name)
@@ -44,7 +52,11 @@ function isJunk(name) {
 function pickAsset(assets, platform) {
   const list = (assets || []).filter((a) => a?.name && !isJunk(a.name));
   if (platform === "win") {
-    return list.find((a) => isWinSetup(a.name)) || null;
+    return (
+      list.find((a) => /WATabs-[\d.]+-Setup\.exe$/i.test(a.name)) ||
+      list.find((a) => isWinSetup(a.name)) ||
+      null
+    );
   }
   if (platform === "mac") {
     const zips = list.filter((a) => isMacZip(a.name));

@@ -1,6 +1,5 @@
 import path from "node:path";
 import type { ForgeConfig } from "@electron-forge/shared-types";
-import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
@@ -17,6 +16,27 @@ const windowsSign =
       }
     : undefined;
 
+const nsisMaker = {
+  name: "@electron-addons/electron-forge-maker-nsis",
+  platforms: ["win32"] as string[],
+  config: {
+    ...(windowsSign
+      ? {
+          codesign: {
+            certificateFile: windowsSign.certificateFile,
+            certificatePassword: windowsSign.certificatePassword,
+          },
+        }
+      : {}),
+    // Emit latest.yml next to the installer for electron-updater (GitHub feed).
+    updater: {
+      url: "https://github.com/harshkolte01/WATabs",
+      channel: "latest",
+      updaterCacheDirName: "WATabs-updater",
+    },
+  },
+};
+
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
@@ -26,28 +46,22 @@ const config: ForgeConfig = {
     // Keep aligned with APP_USER_MODEL_ID in shared-types.
     icon: iconBase,
     extraResource: [path.resolve(__dirname, "assets")],
+    win32metadata: {
+      CompanyName: "WATabs",
+      FileDescription: "WATabs",
+      ProductName: "WATabs",
+      InternalName: "WATabs",
+      OriginalFilename: "WATabs.exe",
+    },
     // Windows Authenticode only when CI secrets are present.
     // macOS Apple signing / notarization is intentionally out of scope.
     ...(windowsSign ? { windowsSign } : {}),
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({
-      name: "WATabs",
-      // Required by Squirrel/NuGet nuspec (package.json "author" alone can be missed in monorepos).
-      authors: "WATabs",
-      description:
-        "WATabs — multi-account WhatsApp Web desktop workspace",
-      setupIcon: `${iconBase}.ico`,
-      // Sign Setup.exe + app at make time (Forge Windows signing guide).
-      ...(windowsSign
-        ? {
-            certificateFile: windowsSign.certificateFile,
-            certificatePassword: windowsSign.certificatePassword,
-            windowsSign,
-          }
-        : {}),
-    }),
+    // NSIS assisted wizard (folder + desktop/Start Menu shortcuts).
+    // Squirrel one-click cannot offer those pages.
+    nsisMaker,
     new MakerZIP({}, ["darwin", "linux"]),
   ],
   plugins: [

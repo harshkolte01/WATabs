@@ -2,6 +2,35 @@
 
 macOS Apple signing stays out of scope.
 
+## Installer (NSIS)
+
+Windows releases use an **NSIS assisted wizard** (`WATabs-<version>-Setup.exe`):
+
+- Choose install folder
+- Desktop / Start Menu shortcut options
+- Launch after finish
+
+“Start at login” is an in-app Settings toggle (not an installer page).
+
+Release assets also include `latest.yml` (and `.blockmap` when produced) for `electron-updater`.
+
+### Migrating from older Squirrel builds
+
+Pre-0.1.4 Windows builds used Squirrel one-click (`%LocalAppData%\WATabs`). Uninstall that copy from **Settings → Apps** before installing the NSIS build, or you can end up with two installs.
+
+### Taskbar icon looks wrong after upgrade
+
+Windows caches icons under the App User Model ID. After installing a new build:
+
+1. Uninstall old WATabs (Squirrel and/or NSIS)
+2. Delete leftover `%LocalAppData%\WATabs` if present
+3. Unpin WATabs from the taskbar, then reinstall and pin again
+4. If still stale: sign out/in, or run `ie4uinit.exe -show`
+
+### Blank window / “Get an app to open this 'watabs' link”
+
+Fixed in **0.1.5+**: the shell `watabs://` handler must be registered on the `persist:desktop-shell` session (not only the default session). Rebuild/reinstall past that version.
+
 ## Self-signed (what we use now)
 
 Good for: proving the CI signing pipeline, local installs, tester builds.  
