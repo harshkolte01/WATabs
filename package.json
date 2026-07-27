@@ -28,7 +28,7 @@
     "security": "pnpm verify:no-injection"
   },
   "devDependencies": {
-    "@electron/fuses": "1.8.0",
+    "@electron/fuses": "2.1.3",
     "tsx": "4.20.5",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
